@@ -104,7 +104,12 @@ class Vehicle extends Admin_Controller
         $price_12_hours = (float) $this->input->post('price_12_hours');
         $price_24_hours = (float) $this->input->post('price_24_hours');
         $extra_hour_charge = (float) $this->input->post('extra_hour_charge');
-        $advance_amount = (float) $this->input->post('advance_amount');
+        $raw_advance = $this->input->post('advance_amount');
+        if ($raw_advance !== null && trim((string) $raw_advance) !== '') {
+            $advance_amount = (float) $raw_advance;
+        } else {
+            $advance_amount = empty($existing_vehicle) ? 1000.00 : 0.00;
+        }
         $status = $this->input->post('status', true) ?: 'available';
 
         if (

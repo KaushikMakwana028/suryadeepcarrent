@@ -97,6 +97,11 @@ foreach ($bookings as $booking) {
 
                             <td>
                                 <span class="table-title">&#8377;<?php echo number_format((float) $booking['amount'], 2); ?></span>
+                                <?php if (!empty($booking['paid_amount']) && (float)$booking['paid_amount'] > 0): ?>
+                                    <span class="table-note" style="color:#059669;font-weight:700;">Paid: &#8377;<?php echo number_format((float) $booking['paid_amount'], 2); ?></span>
+                                <?php elseif (!empty($booking['payment_mode'])): ?>
+                                    <span class="table-note"><?php echo html_escape($booking['payment_mode']); ?></span>
+                                <?php endif; ?>
                             </td>
                             <td><span class="badge badge-<?php echo html_escape($booking_status); ?>"><?php echo html_escape(ucfirst($booking_status)); ?></span></td>
                         </tr>

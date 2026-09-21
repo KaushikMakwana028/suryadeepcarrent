@@ -7,26 +7,26 @@ class Page extends CI_Controller
     {
         $data = array();
 
-        $this->load->view('partials/header', $data);
+        // $this->load->view('partials/header', $data);
         $this->load->view('privacy_policy', $data);
-        $this->load->view('partials/footer', $data);
+        // $this->load->view('partials/footer', $data);
     }
 
     public function terms_condition()
     {
         $data = array();
 
-        $this->load->view('partials/header', $data);
+        // $this->load->view('partials/header', $data);
         $this->load->view('terms_condition', $data);
-        $this->load->view('partials/footer', $data);
+        // $this->load->view('partials/footer', $data);
     }
 
     public function refund_policy()
     {
         $data = array();
 
-        $this->load->view('partials/header', $data);
+        // $this->load->view('partials/header', $data);
         $this->load->view('refund_policy', $data);
-        $this->load->view('partials/footer', $data);
+        // $this->load->view('partials/footer', $data);
     }
 }

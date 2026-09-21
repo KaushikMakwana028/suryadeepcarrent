@@ -1,15 +1,27 @@
 <?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
 <?php
-$existing_request   = !empty($existing_request)   ? $existing_request   : array();
-$payment_settings   = !empty($payment_settings)   ? $payment_settings   : array();
-$cancel_url         = isset($cancel_url) ? $cancel_url : base_url('dashboard');
-$advance_amount     = isset($booking['advance_due']) ? (float) $booking['advance_due'] : 0;
-$advance_amount     = $advance_amount > 0 ? $advance_amount : (float) $booking['amount'];
-$current_step       = isset($current_step) ? (int) $current_step : 3;
+$existing_request = !empty($existing_request) ? $existing_request : array();
+$payment_settings = !empty($payment_settings) ? $payment_settings : array();
+$cancel_url       = isset($cancel_url) ? $cancel_url : base_url('dashboard');
+$back_url         = isset($back_url) ? $back_url : base_url('documents?booking_id=' . (int) $booking['id'] . '&customer_id=' . (int) $booking['customer_id']);
+$total_amount     = isset($total_amount) ? (float) $total_amount : (float) $booking['amount'];
+$advance_due      = isset($advance_due) && (float) $advance_due > 0
+    ? (float) $advance_due
+    : ((isset($booking['advance_amount']) && (float) $booking['advance_amount'] > 0) ? (float) $booking['advance_amount'] : 1000.00);
+if ($total_amount > 0 && $advance_due > $total_amount) {
+    $advance_due = $total_amount;
+}
+$payable_amount   = isset($payable_amount) ? (float) $payable_amount : $advance_due;
+$balance_amount   = max(0, $total_amount - $payable_amount);
+$current_step     = isset($current_step) ? (int) $current_step : 3;
+$razorpay_cfg     = !empty($razorpay_cfg) ? $razorpay_cfg : array();
+$razorpay_key_id  = !empty($razorpay_cfg['razorpay_key_id']) ? $razorpay_cfg['razorpay_key_id'] : 'rzp_live_TdoPPos3deJpcW';
+$company_name     = !empty($razorpay_cfg['razorpay_company_name']) ? $razorpay_cfg['razorpay_company_name'] : 'SURYA DEEP CAR RENT';
+$theme_color      = !empty($razorpay_cfg['razorpay_theme_color']) ? $razorpay_cfg['razorpay_theme_color'] : '#2563eb';
+$currency         = !empty($razorpay_cfg['razorpay_currency']) ? $razorpay_cfg['razorpay_currency'] : 'INR';
 ?>
 
 <style>
-    /* ── Stepper (ORIGINAL — untouched) ──────────────────── */
     .step-shell {
         padding: 20px 24px;
     }
@@ -70,7 +82,7 @@ $current_step       = isset($current_step) ? (int) $current_step : 3;
         background: linear-gradient(90deg, var(--accent) 0%, #f1c14f 100%);
     }
 
-    /* ── Responsive split grid ────────────────────────────── */
+    /* ── Split grid ── */
     .split-grid {
         display: grid;
         grid-template-columns: 1fr 380px;
@@ -84,136 +96,223 @@ $current_step       = isset($current_step) ? (int) $current_step : 3;
         }
     }
 
-    /* ── Form field styles ────────────────────────────────── */
-    .pay-form-card .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+    /* ── Payment method selection cards ── */
+    .pay-methods-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 18px;
+    }
+
+    .pay-method-card {
+        border: 2px solid rgba(35, 94, 167, .14);
+        border-radius: 14px;
+        padding: 18px 20px;
+        background: #ffffff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .pay-method-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 6px 18px rgba(35, 94, 167, .08);
+    }
+
+    .pay-method-card.selected {
+        border-color: var(--accent);
+        background: #fbfdff;
+        box-shadow: 0 8px 24px rgba(35, 94, 167, .12);
+    }
+
+    .pay-method-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .pay-method-left {
+        display: flex;
+        align-items: center;
         gap: 14px;
     }
 
-    @media (max-width: 580px) {
-        .pay-form-card .form-grid {
-            grid-template-columns: 1fr;
-        }
+    .pay-method-radio {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent);
+        cursor: pointer;
     }
 
-    .pay-form-card .form-grid .full {
-        grid-column: 1 / -1;
+    .pay-method-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
     }
 
-    .pay-form-card .form-grid label {
-        display: block;
+    .icon-cash {
+        background: #eef8f2;
+        color: #1a8a4a;
+    }
+
+    .icon-online {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .icon-bank {
+        background: #fef9e7;
+        color: #d97706;
+    }
+
+    .pay-method-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--ink);
+    }
+
+    .pay-method-desc {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+        line-height: 1.4;
+    }
+
+    .pay-method-badge {
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: .08em;
+        padding: 4px 9px;
+        border-radius: 999px;
         text-transform: uppercase;
-        color: var(--muted);
-        margin: 0 0 5px;
+        letter-spacing: .04em;
     }
 
-    .pay-form-card .form-grid input,
-    .pay-form-card .form-grid select,
-    .pay-form-card .form-grid textarea {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px 13px;
-        border-radius: 12px;
-        border: 1.5px solid rgba(35, 94, 167, .16);
-        background: rgba(246, 250, 255, .8);
-        font-size: 14px;
-        color: var(--ink);
-        font-family: inherit;
-        outline: none;
-        transition: border-color .18s, box-shadow .18s, background .18s;
-        appearance: none;
-        -webkit-appearance: none;
+    .badge-cash {
+        background: #eef8f2;
+        color: #1a8a4a;
     }
 
-    .pay-form-card .form-grid select {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23235ea7' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        padding-right: 34px;
-        cursor: pointer;
+    .badge-online {
+        background: #eff6ff;
+        color: #2563eb;
     }
 
-    .pay-form-card .form-grid input:focus,
-    .pay-form-card .form-grid select:focus,
-    .pay-form-card .form-grid textarea:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(35, 94, 167, .10);
-        background: #fff;
+    .badge-bank {
+        background: #fef9e7;
+        color: #b45309;
     }
 
-    .pay-form-card .form-grid input[readonly] {
-        background: rgba(35, 94, 167, .05);
-        color: var(--muted);
-        cursor: default;
-        border-color: rgba(35, 94, 167, .08);
+    .pay-method-body {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px dashed rgba(35, 94, 167, .12);
+        display: none;
     }
 
-    .pay-form-card .form-grid textarea {
-        resize: vertical;
-        min-height: 86px;
+    .pay-method-card.selected .pay-method-body {
+        display: block;
     }
 
-    /* File dropzone */
-    .pay-file-zone {
-        position: relative;
-        border: 2px dashed rgba(35, 94, 167, .22);
-        border-radius: 14px;
-        background: rgba(246, 250, 255, .7);
-        padding: 22px 16px 18px;
-        text-align: center;
-        cursor: pointer;
-        transition: border-color .18s, background .18s;
+    .pay-chips {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
     }
 
-    .pay-file-zone:hover {
-        border-color: var(--accent);
-        background: rgba(35, 94, 167, .04);
-    }
-
-    .pay-file-zone input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: transparent !important;
-    }
-
-    .pay-file-zone-icon {
-        font-size: 26px;
-        line-height: 1;
-        margin-bottom: 7px;
-    }
-
-    .pay-file-zone-text {
-        font-size: 13px;
+    .pay-chip {
+        font-size: 11px;
         font-weight: 700;
-        color: var(--accent);
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 0.5px solid #cbd5e1;
     }
 
-    .pay-file-zone-hint {
-        font-size: 11.5px;
-        color: var(--muted);
-        margin-top: 3px;
+    .btn-pay-rzp {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform .15s ease, box-shadow .15s ease;
+        box-shadow: 0 6px 16px rgba(37, 99, 235, .25);
     }
 
-    .js-payment-file-name {
-        font-size: 12.5px;
-        color: var(--muted);
-        min-height: 18px;
-        margin-top: 5px;
-        padding: 0 2px;
+    .btn-pay-rzp:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, .35);
     }
 
-    /* Booking actions */
+    .btn-pay-cash {
+        background: linear-gradient(135deg, var(--accent) 0%, #0d9488 100%);
+        color: #ffffff !important;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 6px 16px rgba(13, 148, 136, .25);
+    }
+
+    .btn-pay-cash:hover {
+        transform: translateY(-1px);
+    }
+
+    /* ── Summary & details ── */
+    .summary-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        padding: 6px 0;
+        color: #475569;
+    }
+
+    .summary-row strong {
+        color: var(--ink);
+    }
+
+    .summary-row.total {
+        border-top: 1.5px solid #cbd5e1;
+        padding-top: 10px;
+        margin-top: 6px;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--ink);
+    }
+
+    .summary-row.total strong {
+        color: #1e3a8a;
+        font-size: 18px;
+    }
+
     .booking-actions {
         display: flex;
         gap: 10px;
@@ -241,228 +340,58 @@ $current_step       = isset($current_step) ? (int) $current_step : 3;
         }
     }
 
-    /* ── Admin aside card ─────────────────────────────────── */
-    .pay-aside-card {
-        padding: 0;
-        overflow: hidden;
-    }
-
-    .pay-amt-hero {
-        padding: 20px 22px 16px;
-        background: linear-gradient(135deg, rgba(35, 94, 167, .09) 0%, rgba(255, 234, 140, .38) 100%);
-        border-bottom: 1px solid rgba(35, 94, 167, .10);
-    }
-
-    .pay-amt-eyebrow {
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: .14em;
-        text-transform: uppercase;
-        color: var(--accent);
-        margin-bottom: 6px;
-    }
-
-    .pay-amt-value {
-        font-size: clamp(30px, 5vw, 40px);
-        font-weight: 900;
-        color: var(--ink);
-        line-height: 1;
-        letter-spacing: -.02em;
-    }
-
-    .pay-amt-note {
-        font-size: 12.5px;
-        color: var(--ink-2, #5a6a7a);
-        margin-top: 8px;
-        line-height: 1.6;
-    }
-
-    .pay-aside-body {
-        padding: 18px 20px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-
-    /* QR */
-    .pay-qr-wrap {
-        text-align: center;
-    }
-
-    .pay-qr-lbl {
-        font-size: 10.5px;
-        font-weight: 800;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 10px;
-    }
-
-    .pay-qr-frame {
-        display: inline-block;
-        padding: 10px;
-        background: #fff;
-        border-radius: 18px;
-        border: 1px solid rgba(35, 94, 167, .12);
-        box-shadow: 0 4px 18px rgba(35, 94, 167, .09);
-    }
-
-    .pay-qr-frame img {
-        display: block;
-        width: min(170px, 100%);
-        height: auto;
-        border-radius: 10px;
-    }
-
-    .pay-qr-note {
-        font-size: 11.5px;
-        color: var(--muted);
-        margin-top: 8px;
-        line-height: 1.55;
-    }
-
-    /* Bank list */
-    .pay-bank-head {
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 8px;
-    }
-
-    .pay-bank-list {
-        display: flex;
-        flex-direction: column;
-        gap: 7px;
-    }
-
-    .pay-bank-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 10px 13px;
+    /* Bank receipt dropzone */
+    .pay-file-zone {
+        position: relative;
+        border: 2px dashed rgba(35, 94, 167, .22);
         border-radius: 12px;
-        background: rgba(255, 255, 255, .85);
-        border: 1px solid rgba(35, 94, 167, .10);
-    }
-
-    .pay-bank-lbl {
-        font-size: 9.5px;
-        font-weight: 800;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 2px;
-    }
-
-    .pay-bank-val {
-        font-size: 13.5px;
-        font-weight: 700;
-        color: var(--ink);
-        word-break: break-all;
-        line-height: 1.3;
-    }
-
-    .pay-bank-val.mono {
-        font-family: 'Courier New', monospace;
-        font-size: 13px;
-        color: var(--accent);
-        letter-spacing: .02em;
-    }
-
-    .pay-copy {
-        flex-shrink: 0;
-        background: rgba(35, 94, 167, .10);
-        border: none;
-        border-radius: 8px;
-        padding: 4px 9px;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--accent);
+        background: rgba(246, 250, 255, .7);
+        padding: 16px 14px;
+        text-align: center;
         cursor: pointer;
-        transition: background .15s, color .15s;
-        white-space: nowrap;
+        margin-top: 8px;
     }
 
-    .pay-copy:hover {
-        background: rgba(35, 94, 167, .18);
+    .pay-file-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
     }
 
-    .pay-copy.copied {
-        background: rgba(50, 160, 50, .13);
-        color: #2a8a2a;
-    }
-
-    /* Instructions */
-    .pay-instr {
-        padding: 13px 14px;
-        background: rgba(255, 248, 210, .75);
-        border: 1px solid rgba(210, 170, 50, .28);
-        border-radius: 13px;
-        font-size: 13px;
-        color: #6b520e;
-        line-height: 1.65;
-    }
-
-    .pay-instr-lbl {
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: #a07010;
-        margin-bottom: 5px;
-    }
-
-    /* Status */
-    .pay-status {
-        background: rgba(255, 255, 255, .88);
-        border: 1.5px solid rgba(35, 94, 167, .14);
-        border-radius: 13px;
-        padding: 13px 14px;
-    }
-
-    .pay-status-lbl {
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 7px;
-    }
-
-    .pay-status-badge {
-        display: inline-flex;
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(3px);
+        z-index: 9999;
         align-items: center;
-        gap: 5px;
-        padding: 4px 12px 4px 9px;
-        border-radius: 999px;
-        background: rgba(35, 94, 167, .10);
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: .04em;
-        text-transform: uppercase;
-        margin-bottom: 7px;
+        justify-content: center;
+        color: #fff;
+        flex-direction: column;
+        gap: 12px;
+        font-weight: 700;
+        font-size: 15px;
     }
 
-    .pay-status-dot {
-        width: 7px;
-        height: 7px;
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
-        background: var(--accent);
-        display: inline-block;
+        border-top-color: #fff;
+        animation: spin 0.8s ease-in-out infinite;
     }
 
-    .pay-status-note {
-        font-size: 12.5px;
-        color: var(--ink-2, #5a6a7a);
-        line-height: 1.6;
+    @keyframes spin {
+        to { transform: rotate(360deg); }
     }
 </style>
 
-<!-- ════ Stepper (ORIGINAL, unchanged) ════════════════════════════════ -->
+<!-- ── Stepper ── -->
 <section class="section-card step-shell">
     <div class="stepper">
         <?php
@@ -482,191 +411,284 @@ $current_step       = isset($current_step) ? (int) $current_step : 3;
     </div>
 </section>
 
-<!-- ════ Content ══════════════════════════════════════════════════════ -->
+<!-- ── Main Split Grid ── -->
 <div class="split-grid">
 
-    <!-- LEFT: Form ─────────────────────────────────────────────────── -->
-    <section class="section-card pay-form-card">
+    <!-- LEFT: Payment Options -->
+    <section class="section-card">
         <div class="card-head">
             <div>
-                <div class="eyebrow">Advance Payment</div>
-                <h3>Upload your advance payment receipt.</h3>
-                <p>Pay the advance amount using the admin payment details on the right, then upload the receipt to complete the booking request.</p>
+                <div class="eyebrow">Step 3 of 3</div>
+                <h3>Choose Payment Method</h3>
+                <p>Select your preferred mode of payment to confirm your booking.</p>
             </div>
         </div>
 
-        <form method="post" action="<?php echo base_url('payments/store'); ?>" enctype="multipart/form-data">
-            <input type="hidden" name="booking_id" value="<?php echo (int) $booking['id']; ?>">
-            <input type="hidden" name="customer_id" value="<?php echo (int) $booking['customer_id']; ?>">
+        <div class="pay-methods-wrap">
 
-            <div class="form-grid">
-                <div class="full">
-                    <label>Booking</label>
-                    <input type="text" value="<?php echo html_escape($booking['booking_code'] . ' | ' . $booking['vehicle_name']); ?>" readonly>
-                </div>
-                <div>
-                    <label>Payment Type</label>
-                    <input type="text" value="Advance Payment" readonly>
-                </div>
-                <div>
-                    <label>Advance Amount</label>
-                    <input type="number" step="0.01" value="<?php echo number_format($advance_amount, 2, '.', ''); ?>" readonly required>
-                </div>
-                <div>
-                    <label>Payment Mode</label>
-                    <select name="payment_mode" required>
-                        <option value="UPI">UPI</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Cash Deposit">Cash Deposit</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Transaction / Reference No.</label>
-                    <input type="text" name="reference_no" placeholder="Enter UPI or bank reference number" required>
-                </div>
-                <div class="full">
-                    <label>Receipt Upload</label>
-                    <div class="pay-file-zone">
-                        <input class="js-payment-file" type="file" name="receipt_file" accept=".jpg,.jpeg,.png,.pdf,.webp" required>
-                        <div class="pay-file-zone-icon">📎</div>
-                        <div class="pay-file-zone-text">Click or drag &amp; drop to upload</div>
-                        <div class="pay-file-zone-hint">JPG, PNG, PDF or WebP &mdash; max 8 MB</div>
+            <!-- ── Option 1: Cash ── -->
+            <div class="pay-method-card selected" id="card_cash" onclick="selectPaymentMethod('cash')">
+                <div class="pay-method-head">
+                    <div class="pay-method-left">
+                        <input type="radio" name="payment_choice" id="choice_cash" value="cash" checked class="pay-method-radio">
+                        <div class="pay-method-icon icon-cash">💵</div>
+                        <div>
+                            <div class="pay-method-title">Cash on Pickup</div>
+                            <div class="pay-method-desc">Pay the booking amount in cash when you collect the car or upon delivery.</div>
+                        </div>
                     </div>
-                    <div class="js-payment-file-name"></div>
+                    <span class="pay-method-badge badge-cash">Pay Later</span>
                 </div>
-                <div class="full">
-                    <label>Customer Note <span style="font-weight:500;text-transform:none;font-size:11px;opacity:.55;">(optional)</span></label>
-                    <textarea name="customer_notes" rows="3" placeholder="Optional note for admin, such as sender name or branch details."><?php echo !empty($existing_request['customer_notes']) ? html_escape($existing_request['customer_notes']) : ''; ?></textarea>
+
+                <div class="pay-method-body" id="body_cash">
+                    <div style="background:#f8fafc; border-radius:10px; padding:12px 16px; font-size:13px; color:#334155; line-height:1.5;">
+                        ℹ️ <strong>No advance payment required right now.</strong> You can pay the total fare of ₹<?php echo number_format($total_amount, 2); ?> in cash directly at our desk or to the driver upon vehicle pickup.
+                    </div>
+
+                    <form method="post" action="<?php echo base_url('payments/confirm_cash'); ?>" style="margin-top:16px;">
+                        <input type="hidden" name="booking_id" value="<?php echo (int) $booking['id']; ?>">
+                        <input type="hidden" name="customer_id" value="<?php echo (int) $booking['customer_id']; ?>">
+                        <button type="submit" class="btn-pay-cash">
+                            ✓ Confirm Booking with Cash
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            <div class="booking-actions">
-                <a class="btn-secondary" href="<?php echo base_url('documents?booking_id=' . (int) $booking['id'] . '&customer_id=' . (int) $booking['customer_id']); ?>">&#8592; Previous Step</a>
-                <button class="btn" type="submit">Complete Booking</button>
-                <a class="btn-secondary js-swal-confirm" href="<?php echo $cancel_url; ?>" data-swal-title="Cancel booking?" data-swal-text="This incomplete booking draft will be removed." data-swal-confirm="Yes, cancel">Cancel</a>
+            <!-- ── Option 2: Online Payment via Razorpay ── -->
+            <div class="pay-method-card" id="card_online" onclick="selectPaymentMethod('online')">
+                <div class="pay-method-head">
+                    <div class="pay-method-left">
+                        <input type="radio" name="payment_choice" id="choice_online" value="online" class="pay-method-radio">
+                        <div class="pay-method-icon icon-online">⚡</div>
+                        <div>
+                            <div class="pay-method-title">Pay Online (Razorpay)</div>
+                            <div class="pay-method-desc">Instant confirmation via UPI, Cards, NetBanking, and Wallets.</div>
+                        </div>
+                    </div>
+                    <span class="pay-method-badge badge-online">Instant</span>
+                </div>
+
+                <div class="pay-method-body" id="body_online">
+                    <div class="pay-chips">
+                        <span class="pay-chip">Google Pay</span>
+                        <span class="pay-chip">PhonePe</span>
+                        <span class="pay-chip">Paytm UPI</span>
+                        <span class="pay-chip">Credit / Debit Card</span>
+                        <span class="pay-chip">Net Banking</span>
+                        <span class="pay-chip">Wallets</span>
+                    </div>
+
+                    <div style="margin-top:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 14px; font-size:13px; color:#1e40af;">
+                        🔒 <strong>Secure 256-bit encrypted checkout.</strong> Pay advance amount of <strong>₹<?php echo number_format($payable_amount, 2); ?></strong> now via Razorpay.<?php if ($balance_amount > 0): ?> Remaining balance of <strong>₹<?php echo number_format($balance_amount, 2); ?></strong> will be payable upon vehicle pickup.<?php endif; ?>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <button type="button" class="btn-pay-rzp" id="btn_trigger_razorpay">
+                            💳 Pay Advance Online ₹<?php echo number_format($payable_amount, 2); ?>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </form>
+        </div>
+
+        <div class="booking-actions">
+            <a class="btn-secondary" href="<?php echo html_escape($back_url); ?>">&#8592; Previous Step</a>
+            <a class="btn-secondary js-swal-confirm" href="<?php echo html_escape($cancel_url); ?>" data-swal-title="Cancel booking?" data-swal-text="This incomplete booking draft will be removed." data-swal-confirm="Yes, cancel">Cancel</a>
+        </div>
     </section>
 
-    <!-- RIGHT: Admin Payment Details ───────────────────────────────── -->
-    <aside class="section-card accent-card pay-aside-card">
-
-        <div class="pay-amt-hero">
-            <div class="pay-amt-eyebrow">Pay This Amount</div>
-            <div class="pay-amt-value">&#8377;<?php echo number_format($advance_amount, 2); ?></div>
-            <div class="pay-amt-note">Use the QR code or bank details below. Upload your receipt after payment.</div>
+    <!-- RIGHT: Booking Summary -->
+    <aside class="section-card accent-card">
+        <div class="eyebrow">Summary</div>
+        <div class="card-head">
+            <div>
+                <h3>Reservation Details</h3>
+                <p><?php echo html_escape($booking['booking_code']); ?></p>
+            </div>
         </div>
 
-        <div class="pay-aside-body">
-
-            <?php if (!empty($payment_settings['qr_image'])): ?>
-                <div class="pay-qr-wrap">
-                    <div class="pay-qr-lbl">Scan &amp; Pay</div>
-                    <div class="pay-qr-frame">
-                        <img src="<?php echo base_url($payment_settings['qr_image']); ?>" alt="Payment QR Code">
-                    </div>
-                    <div class="pay-qr-note">Scan and pay the exact advance amount,<br>then upload your payment receipt.</div>
-                </div>
-            <?php endif; ?>
-
-            <div>
-                <div class="pay-bank-head">Bank Details</div>
-                <div class="pay-bank-list">
-                    <?php
-                    $fields = array(
-                        array('key' => 'account_holder', 'lbl' => 'Account Holder', 'mono' => false),
-                        array('key' => 'bank_name',     'lbl' => 'Bank Name',     'mono' => false),
-                        array('key' => 'account_number', 'lbl' => 'Account Number', 'mono' => true),
-                        array('key' => 'ifsc_code',     'lbl' => 'IFSC Code',     'mono' => true),
-                        array('key' => 'branch_name',   'lbl' => 'Branch',        'mono' => false),
-                        array('key' => 'upi_id',        'lbl' => 'UPI ID',        'mono' => true),
-                    );
-                    foreach ($fields as $f):
-                        $val = !empty($payment_settings[$f['key']]) ? html_escape($payment_settings[$f['key']]) : 'Not added yet';
-                        $raw = !empty($payment_settings[$f['key']]) ? $payment_settings[$f['key']] : '';
-                    ?>
-                        <div class="pay-bank-row">
-                            <div>
-                                <div class="pay-bank-lbl"><?php echo $f['lbl']; ?></div>
-                                <div class="pay-bank-val <?php echo $f['mono'] ? 'mono' : ''; ?>"><?php echo $val; ?></div>
-                            </div>
-                            <?php if ($f['mono'] && $raw): ?>
-                                <button class="pay-copy" type="button" data-copy="<?php echo html_escape($raw); ?>">Copy</button>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+        <div class="summary-box">
+            <div class="summary-row">
+                <span>Vehicle:</span>
+                <strong><?php echo html_escape($booking['vehicle_name']); ?></strong>
             </div>
-
-            <div class="pay-instr">
-                <div class="pay-instr-lbl">&#128161; Instructions</div>
-                <?php echo !empty($payment_settings['payment_instructions'])
-                    ? nl2br(html_escape($payment_settings['payment_instructions']))
-                    : 'Use the available QR code or bank details above. Upload your receipt once the payment is done.'; ?>
+            <?php if (!empty($booking['registration_no'])): ?>
+            <div class="summary-row">
+                <span>Reg No:</span>
+                <strong><?php echo html_escape($booking['registration_no']); ?></strong>
             </div>
-
-            <?php if (!empty($existing_request)): ?>
-                <div class="pay-status">
-                    <div class="pay-status-lbl">Current Request Status</div>
-                    <div class="pay-status-badge">
-                        <span class="pay-status-dot"></span>
-                        <?php echo ucfirst(html_escape($existing_request['status'])); ?>
-                    </div>
-                    <div class="pay-status-note">
-                        <?php echo !empty($existing_request['admin_notes'])
-                            ? html_escape($existing_request['admin_notes'])
-                            : 'Your uploaded receipt is waiting for admin action.'; ?>
-                    </div>
-                </div>
             <?php endif; ?>
+            <div class="summary-row">
+                <span>Trip Schedule:</span>
+                <strong><?php echo html_escape($booking['trip_label']); ?></strong>
+            </div>
+            <div class="summary-row">
+                <span>Route:</span>
+                <strong><?php echo html_escape($booking['trip_route']); ?></strong>
+            </div>
+            <div class="summary-row">
+                <span>Duration / Mode:</span>
+                <strong><?php echo html_escape($booking['trip_mode_label']); ?></strong>
+            </div>
+            <div class="summary-row total">
+                <span>Total Fare:</span>
+                <strong>₹<?php echo number_format($total_amount, 2); ?></strong>
+            </div>
+            <div class="summary-row" style="color:#2563eb;font-weight:700;">
+                <span>Advance Payable Now:</span>
+                <strong>₹<?php echo number_format($payable_amount, 2); ?></strong>
+            </div>
+            <?php if ($balance_amount > 0): ?>
+            <div class="summary-row" style="color:#059669;font-weight:700;">
+                <span>Balance on Pickup:</span>
+                <strong>₹<?php echo number_format($balance_amount, 2); ?></strong>
+            </div>
+            <?php endif; ?>
+        </div>
 
+        <div class="info-grid" style="grid-template-columns:1fr;">
+            <div class="feature-card">
+                <strong>Customer</strong>
+                <span><?php echo html_escape($booking['customer_name']); ?> &bull; <?php echo html_escape($booking['customer_phone']); ?></span>
+            </div>
+            <div class="feature-card">
+                <strong>Instant Support</strong>
+                <span>Need help with your booking or payment? Call our 24x7 support desk.</span>
+            </div>
         </div>
     </aside>
-
 </div>
 
-<script>
-    (function() {
-        var input = document.querySelector('.js-payment-file');
-        var nameEl = document.querySelector('.js-payment-file-name');
-        var zone = document.querySelector('.pay-file-zone');
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="loadingText">Processing payment...</div>
+</div>
 
-        if (input && nameEl) {
-            input.addEventListener('change', function() {
-                if (input.files && input.files.length > 0) {
-                    var f = input.files[0];
-                    var kb = f.size / 1024;
-                    var sz = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.round(kb) + ' KB';
-                    nameEl.textContent = '\u2713 ' + f.name + ' \u2014 ' + sz;
-                    nameEl.style.color = '#2a8a2a';
-                    nameEl.style.fontWeight = '700';
-                    if (zone) {
-                        zone.style.borderColor = '#5db85d';
-                        zone.style.background = 'rgba(50,160,50,.05)';
-                    }
-                } else {
-                    nameEl.textContent = '';
-                    nameEl.style.color = '';
-                    nameEl.style.fontWeight = '';
-                    if (zone) {
-                        zone.style.borderColor = '';
-                        zone.style.background = '';
-                    }
-                }
-            });
+<!-- Razorpay Checkout JS -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+function selectPaymentMethod(mode) {
+    var cards = ['cash', 'online'];
+    cards.forEach(function(m) {
+        var card = document.getElementById('card_' + m);
+        var radio = document.getElementById('choice_' + m);
+        if (card && radio) {
+            if (m === mode) {
+                card.classList.add('selected');
+                radio.checked = true;
+            } else {
+                card.classList.remove('selected');
+                radio.checked = false;
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var rzpBtn = document.getElementById('btn_trigger_razorpay');
+    var loadingOverlay = document.getElementById('loadingOverlay');
+    var loadingText = document.getElementById('loadingText');
+
+    if (!rzpBtn) return;
+
+    rzpBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        rzpBtn.disabled = true;
+        if (loadingOverlay) {
+            loadingText.textContent = 'Initializing secure payment...';
+            loadingOverlay.style.display = 'flex';
         }
 
-        document.querySelectorAll('.pay-copy').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                navigator.clipboard.writeText(btn.getAttribute('data-copy') || '').then(function() {
-                    btn.textContent = 'Copied!';
-                    btn.classList.add('copied');
-                    setTimeout(function() {
-                        btn.textContent = 'Copy';
-                        btn.classList.remove('copied');
-                    }, 1800);
-                });
+        // Step 1: Request order from server
+        var formData = new FormData();
+        formData.append('booking_id', '<?php echo (int) $booking['id']; ?>');
+        formData.append('customer_id', '<?php echo (int) $booking['customer_id']; ?>');
+
+        fetch('<?php echo base_url('payments/create_razorpay_order'); ?>', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+            rzpBtn.disabled = false;
+
+            if (!data.success) {
+                alert(data.message || 'Unable to start payment. Please try again or select Cash.');
+                return;
+            }
+
+            // Step 2: Open Razorpay Checkout modal
+            var options = {
+                "key": data.key_id,
+                "amount": data.amount,
+                "currency": data.currency,
+                "name": data.company_name,
+                "description": data.description,
+                "image": data.logo_url,
+                "order_id": data.order_id,
+                "handler": function (response) {
+                    // Step 3: Verify payment on server
+                    if (loadingOverlay) {
+                        loadingText.textContent = 'Verifying payment with bank...';
+                        loadingOverlay.style.display = 'flex';
+                    }
+
+                    var verifyData = new FormData();
+                    verifyData.append('booking_id', '<?php echo (int) $booking['id']; ?>');
+                    verifyData.append('customer_id', '<?php echo (int) $booking['customer_id']; ?>');
+                    verifyData.append('razorpay_payment_id', response.razorpay_payment_id || '');
+                    verifyData.append('razorpay_order_id', response.razorpay_order_id || '');
+                    verifyData.append('razorpay_signature', response.razorpay_signature || '');
+
+                    fetch('<?php echo base_url('payments/verify_razorpay'); ?>', {
+                        method: 'POST',
+                        body: verifyData
+                    })
+                    .then(function(vRes) { return vRes.json(); })
+                    .then(function(vData) {
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        if (vData.success) {
+                            window.location.href = vData.redirect || '<?php echo base_url('dashboard'); ?>';
+                        } else {
+                            alert(vData.message || 'Payment verification failed. Please contact support.');
+                        }
+                    })
+                    .catch(function(err) {
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        alert('Network error during verification. Please contact support with Payment ID: ' + response.razorpay_payment_id);
+                    });
+                },
+                "prefill": {
+                    "name": data.customer_name,
+                    "contact": data.customer_phone,
+                    "email": data.customer_email
+                },
+                "theme": {
+                    "color": data.theme_color
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        rzpBtn.disabled = false;
+                    }
+                }
+            };
+
+            var rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                alert('Payment failed: ' + (response.error.description || 'Unknown error'));
             });
+            rzp.open();
+        })
+        .catch(function(err) {
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+            rzpBtn.disabled = false;
+            alert('Failed to connect to payment server. Please try again or select Cash.');
         });
-    })();
+    });
+});
 </script>

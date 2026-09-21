@@ -222,6 +222,53 @@
             </label>
             <input type="text" id="admin_advance_amount" readonly>
             <div class="helper" id="adm_advance_helper">Advance amount for the selected vehicle.</div>
+        <div class="full" style="
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-top: 6px;
+        ">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: #2563eb;">
+                💳 Payment Information
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 10px;">
+                <div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Payment Mode</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                        <?php echo strtolower($booking['payment_mode'] ?? '') === 'razorpay' ? '⚡ Online (Razorpay)' : '💵 Cash on Pickup'; ?>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Payment Status</div>
+                    <div style="font-size: 14px; font-weight: 700; color: <?php echo !empty($booking['paid_amount']) && $booking['paid_amount'] > 0 ? '#16a34a' : '#ea580c'; ?>;">
+                        <?php echo html_escape($booking['payment_status'] ?? 'Pending'); ?>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Amount Paid / Due</div>
+                    <div style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                        Paid: ₹<?php echo number_format((float) ($booking['paid_amount'] ?? 0), 2); ?>
+                        <span style="color:#64748b;font-weight:400;font-size:12px;">(Bal: ₹<?php echo number_format((float) ($booking['balance_amount'] ?? 0), 2); ?>)</span>
+                    </div>
+                </div>
+                <?php if (!empty($booking['razorpay_payment_id'])): ?>
+                <div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Razorpay Payment ID</div>
+                    <div style="font-size: 13px; font-family: monospace; font-weight: 700; color: #2563eb; word-break: break-all;">
+                        <?php echo html_escape($booking['razorpay_payment_id']); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($booking['razorpay_order_id'])): ?>
+                <div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Razorpay Order ID</div>
+                    <div style="font-size: 13px; font-family: monospace; font-weight: 700; color: #475569; word-break: break-all;">
+                        <?php echo html_escape($booking['razorpay_order_id']); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="full">

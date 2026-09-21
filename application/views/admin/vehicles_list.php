@@ -1902,7 +1902,7 @@
 
                 <div class="vm-fg">
                     <label>Required Advance (₹)</label>
-                    <input type="number" step="0.01" name="advance_amount" id="advance_amount" placeholder="1000" required>
+                    <input type="number" step="0.01" name="advance_amount" id="advance_amount" placeholder="1000" value="1000" required>
                 </div>
 
                 <div class="vm-fg">
@@ -2298,6 +2298,7 @@
             submitBtn.textContent = 'Add Vehicle';
             setPreview('');
             setUpload('', '');
+            setVal('advance_amount', '1000');
         }
 
         function closeBookingViewModal() {

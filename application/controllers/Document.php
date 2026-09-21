@@ -30,9 +30,7 @@ class Document extends MY_Controller
         }
 
         $data['page_title'] = 'Upload Documents';
-        $data['page_subtitle'] = !empty($booking['requires_advance'])
-            ? 'Upload Aadhaar Card and Driving License files before moving to the advance payment step.'
-            : 'Upload Aadhaar Card and Driving License files to complete the booking request.';
+        $data['page_subtitle'] = 'Upload Aadhaar Card and Driving License files before moving to the payment step.';
         $data['current_user'] = $this->current_user;
         $data['is_customer_logged_in'] = $this->is_logged_in() && $this->current_role() === 0;
         $data['current_step'] = 2;
@@ -150,7 +148,8 @@ class Document extends MY_Controller
             redirect('dashboard');
         }
 
-        $this->complete_booking_without_advance($booking);
+        $this->session->set_flashdata('success', 'Documents uploaded successfully. Proceed with payment.');
+        redirect('payments/pay/' . $booking_id . '?customer_id=' . $customer_id);
         return;
     }
 
@@ -168,11 +167,11 @@ class Document extends MY_Controller
         }
 
         if (!$this->can_continue_to_payment($customer_id)) {
-            $this->session->set_flashdata('error', 'Upload both required documents before completing the booking.');
+            $this->session->set_flashdata('error', 'Upload both required documents before continuing to payment.');
             redirect('documents?booking_id=' . (int) $booking_id . '&customer_id=' . $customer_id);
         }
 
-        $this->complete_booking_without_advance($booking);
+        redirect('payments/pay/' . (int) $booking_id . '?customer_id=' . $customer_id);
     }
 
     private function can_continue_to_payment($customer_id)

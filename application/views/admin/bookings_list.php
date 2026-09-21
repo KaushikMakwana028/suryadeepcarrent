@@ -468,6 +468,20 @@
         color: var(--bk-danger);
     }
 
+    .bk-pay-badge.cash-pending,
+    .bk-pay-badge.cash {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    .bk-pay-badge.online,
+    .bk-pay-badge.razorpay {
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+
     .bk-actions {
         display: flex;
         gap: 6px;
@@ -507,6 +521,22 @@
 
     .bk-action-btn.blue:hover {
         background: var(--bk-primary-mid);
+    }
+
+    .bk-action-btn.bk-collect-action-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border-color: #047857 !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+        transition: all 0.15s ease;
+    }
+
+    .bk-action-btn.bk-collect-action-btn:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.55);
+        color: #ffffff !important;
     }
 
     .bk-empty {
@@ -724,7 +754,229 @@
         line-height: 1.6;
     }
 
-    /* Collect form */
+    /* Collect modal & form styling */
+    .bk-modal-collect {
+        max-width: 520px !important;
+        border-radius: 16px !important;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.25) !important;
+    }
+
+    .bk-collect-head-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .bk-collect-icon-wrap {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+        border: 1px solid #bfdbfe;
+    }
+
+    .bk-collect-stats-bar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .bk-cstat-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .bk-cstat-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .bk-cstat-val {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .bk-cstat-card.bk-cstat-paid {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+    .bk-cstat-card.bk-cstat-paid .bk-cstat-val {
+        color: #15803d;
+    }
+
+    .bk-cstat-card.bk-cstat-due {
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+    .bk-cstat-card.bk-cstat-due .bk-cstat-val {
+        color: #b91c1c;
+    }
+
+    .bk-input-currency-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .bk-currency-symbol {
+        position: absolute;
+        left: 14px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #64748b;
+        pointer-events: none;
+    }
+
+    .bk-input-amount {
+        height: 46px !important;
+        padding-left: 32px !important;
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        border: 2px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        background: #ffffff !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .bk-input-amount:focus {
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+    }
+
+    .bk-mode-cards-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .bk-mode-card {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 11px 12px;
+        background: #ffffff;
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .bk-mode-card:hover {
+        border-color: #94a3b8;
+        background: #f8fafc;
+    }
+
+    .bk-mode-card.active-rzp {
+        border-color: #2563eb;
+        background: #eff6ff;
+        box-shadow: 0 3px 10px rgba(37, 99, 235, 0.14);
+    }
+
+    .bk-mode-card.active-cash {
+        border-color: #10b981;
+        background: #f0fdf4;
+        box-shadow: 0 3px 10px rgba(16, 185, 129, 0.14);
+    }
+
+    .bk-mode-radio-circle {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        border: 2px solid #cbd5e1;
+        margin-top: 2px;
+        flex-shrink: 0;
+        transition: all 0.15s ease;
+    }
+
+    .bk-mode-card.active-rzp .bk-mode-radio-circle {
+        border-color: #2563eb;
+        background: #2563eb;
+        box-shadow: inset 0 0 0 3px #ffffff;
+    }
+
+    .bk-mode-card.active-cash .bk-mode-radio-circle {
+        border-color: #10b981;
+        background: #10b981;
+        box-shadow: inset 0 0 0 3px #ffffff;
+    }
+
+    .bk-mode-card-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+    }
+
+    .bk-mode-card.active-rzp .bk-mode-card-title {
+        color: #1d4ed8;
+    }
+
+    .bk-mode-card.active-cash .bk-mode-card-title {
+        color: #047857;
+    }
+
+    .bk-mode-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .bk-mode-badge.rzp {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .bk-mode-badge.cash {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .bk-mode-card-desc {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.3;
+    }
+
+    .bk-rzp-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #eff6ff;
+        border: 1.5px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #1e40af;
+        line-height: 1.45;
+        margin-top: 4px;
+    }
+
     .bk-collect-summary {
         border: 0.5px solid var(--bk-primary-mid);
         background: var(--bk-primary-soft);
@@ -1222,7 +1474,10 @@ unset($booking);
                                 'balance_amount' => (float) $booking['balance_amount'],
 
                                 'advance_due'        => (float) $booking['advance_due'],
+                                'payment_mode'       => !empty($booking['payment_mode']) ? $booking['payment_mode'] : 'Cash',
                                 'payment_status'     => $booking['payment_status'],
+                                'razorpay_payment_id'=> !empty($booking['razorpay_payment_id']) ? $booking['razorpay_payment_id'] : '',
+                                'razorpay_order_id'  => !empty($booking['razorpay_order_id']) ? $booking['razorpay_order_id'] : '',
                                 'pickup_time'  => !empty($booking['pickup_time'])  ? $booking['pickup_time']  : '',
                                 'return_time'  => !empty($booking['return_time'])  ? $booking['return_time']  : '',
                                 'booking_type' => !empty($booking['booking_type']) ? $booking['booking_type'] : 'km',
@@ -1243,6 +1498,7 @@ unset($booking);
                                 data-booking-id="<?php echo (int) $booking['id']; ?>"
                                 data-booking-code="<?php echo html_escape($booking['booking_code']); ?>"
                                 data-booking-customer="<?php echo html_escape($booking['customer_name']); ?>"
+                                data-payment-mode="<?php echo html_escape(!empty($booking['payment_mode']) ? $booking['payment_mode'] : 'Cash'); ?>"
                                 data-balance="<?php echo number_format((float) $booking['balance_amount'], 2, '.', ''); ?>"
                                 data-amount="<?php echo number_format((float) $booking['amount'], 2, '.', ''); ?>"
                                 data-paid="<?php echo number_format((float) $booking['paid_amount'], 2, '.', ''); ?>">
@@ -1293,7 +1549,19 @@ unset($booking);
                                 </td>
                                 <td>
                                     <span class="bk-pay-badge <?php echo html_escape($booking['payment_badge']); ?>"><?php echo html_escape($booking['payment_status']); ?></span>
-                                    <span class="td-muted">Paid Rs <?php echo number_format((float) $booking['paid_amount'], 0); ?></span>
+                                    <span class="td-muted" style="display:block;margin-top:2px;">
+                                        <?php if (!empty($booking['payment_mode'])): ?>
+                                            <span style="font-weight:700;color:<?php echo strtolower($booking['payment_mode']) === 'razorpay' ? '#2563eb' : '#475569'; ?>;">
+                                                <?php echo strtolower($booking['payment_mode']) === 'razorpay' ? '⚡ Razorpay' : '💵 Cash'; ?>
+                                            </span> &bull;
+                                        <?php endif; ?>
+                                        Paid Rs <?php echo number_format((float) $booking['paid_amount'], 0); ?>
+                                    </span>
+                                    <?php if (!empty($booking['razorpay_payment_id'])): ?>
+                                        <span class="td-sub" style="font-family:monospace;font-size:10px;color:#64748b;" title="<?php echo html_escape($booking['razorpay_payment_id']); ?>">
+                                            ID: <?php echo html_escape(substr($booking['razorpay_payment_id'], 0, 14) . '...'); ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <span class="bk-badge <?php echo html_escape($booking['display_status']); ?>"><?php echo ucfirst($booking['display_status']); ?></span>
@@ -1320,7 +1588,7 @@ unset($booking);
 
                                         <!-- Collect / Summary -->
                                         <?php if ($has_balance): ?>
-                                            <button class="bk-action-btn bk-icon-btn blue js-bk-collect" type="button" title="Collect Payment">
+                                            <button class="bk-action-btn bk-icon-btn bk-collect-action-btn js-bk-collect" type="button" title="Collect Payment (Balance: Rs <?php echo number_format((float) $booking['balance_amount'], 2); ?>)">
                                                 <i class="ti ti-coin-rupee"></i>
                                             </button>
                                         <?php else: ?>
@@ -1466,6 +1734,17 @@ unset($booking);
                     <span>Net Amount (After Expenses)</span><strong id="bkDTotal">Rs 0</strong>
                 </div>
             </div>
+            <!-- Payment Details Box -->
+            <div class="bk-fare-box" style="margin-top:10px;background:#f8fafc;border:1px solid #e2e8f0;">
+                <div class="bk-fare-row"><span>Payment Method</span><strong id="bkDPayMode">—</strong></div>
+                <div class="bk-fare-row"><span>Payment Status</span><strong id="bkDPayStatus">—</strong></div>
+                <div class="bk-fare-row"><span>Amount Paid</span><strong id="bkDPaidAmt" style="color:#16a34a;">Rs 0</strong></div>
+                <div class="bk-fare-row"><span>Balance Remaining</span><strong id="bkDBalAmt" style="color:#dc2626;">Rs 0</strong></div>
+                <div class="bk-fare-row" id="bkDRazorpayRow" style="display:none;border-top:0.5px solid #e2e8f0;padding-top:6px;margin-top:4px;">
+                    <span>Razorpay Payment ID</span>
+                    <strong id="bkDRazorpayId" style="font-family:monospace;font-size:12px;color:#2563eb;word-break:break-all;">—</strong>
+                </div>
+            </div>
             <div class="bk-detail-note" id="bkDetailNote">Payment summary will appear here.</div>
             <div class="bk-modal-actions">
 
@@ -1500,11 +1779,11 @@ unset($booking);
                     Payment Reminder
                 </button>
 
-                <button class="bk-btn-primary"
+                <button class="bk-btn-primary bk-detail-collect-highlight"
                     type="button"
                     id="bkDetailCollectBtn">
-
-                    Collect Payment
+                    <i class="ti ti-coin-rupee" style="font-size:16px;"></i>
+                    <span>Collect Payment</span>
                 </button>
 
             </div>
@@ -1575,6 +1854,22 @@ unset($booking);
                     background: #1d4ed8;
                 }
 
+                .bk-btn-primary.bk-detail-collect-highlight {
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+                    color: #fff !important;
+                    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+                    border: none !important;
+                    padding: 0 22px !important;
+                    font-size: 14px !important;
+                    font-weight: 700 !important;
+                }
+
+                .bk-btn-primary.bk-detail-collect-highlight:hover {
+                    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55) !important;
+                }
+
                 /* Icon */
                 .bk-action-icon {
                     width: 16px;
@@ -1588,61 +1883,146 @@ unset($booking);
 
 <!-- ── Collect Modal ── -->
 <div class="bk-modal-overlay" id="bkCollectModal">
-    <div class="bk-modal">
-        <div class="bk-modal-head">
-            <div>
-                <h3>Collect Payment</h3>
-                <p>Record a direct payment for the selected booking.</p>
+    <div class="bk-modal bk-modal-collect">
+        <div class="bk-modal-head" style="align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;">
+            <div class="bk-collect-head-info">
+                <div class="bk-collect-icon-wrap">
+                    <i class="ti ti-cash-banknote"></i>
+                </div>
+                <div>
+                    <h3 style="margin:0;font-size:17px;font-weight:700;color:#0f172a;">Collect Remaining Payment</h3>
+                    <p style="margin:2px 0 0;font-size:13px;color:#64748b;">
+                        Booking: <strong id="bkCLabel" style="color:#0f172a;font-family:monospace;font-size:13px;">—</strong>
+                    </p>
+                </div>
             </div>
             <button class="bk-modal-close" type="button" data-close-modal="bkCollectModal">&times;</button>
         </div>
-        <div class="bk-modal-body">
-            <div class="bk-collect-summary">
-                <div class="bk-fare-row"><span>Booking</span><strong id="bkCLabel">—</strong></div>
-                <div class="bk-fare-row"><span>Total Amount</span><strong id="bkCTotal">Rs 0</strong></div>
-                <div class="bk-fare-row good"><span>Already Paid</span><strong id="bkCPaid">Rs 0</strong></div>
-                <div class="bk-fare-row total due"><span>Balance Due</span><strong id="bkCBalance">Rs 0</strong></div>
+        <div class="bk-modal-body" style="padding:18px 20px;">
+            <!-- 3-Card Summary Metric Bar -->
+            <div class="bk-collect-stats-bar">
+                <div class="bk-cstat-card">
+                    <span class="bk-cstat-label">Total Amount</span>
+                    <span class="bk-cstat-val" id="bkCTotal">Rs 0</span>
+                </div>
+                <div class="bk-cstat-card bk-cstat-paid">
+                    <span class="bk-cstat-label">Already Paid</span>
+                    <span class="bk-cstat-val" id="bkCPaid">Rs 0</span>
+                </div>
+                <div class="bk-cstat-card bk-cstat-due">
+                    <span class="bk-cstat-label">Balance Due</span>
+                    <span class="bk-cstat-val" id="bkCBalance">Rs 0</span>
+                </div>
             </div>
-            <div class="bk-detail-note" id="bkCNote">Save the payment and then share the thank-you message with the customer.</div>
-            <form class="bk-collect-form" method="post" action="<?php echo base_url('admin/payments/store'); ?>">
+
+            <form class="bk-collect-form" id="bkCollectForm" method="post" action="<?php echo base_url('admin/payments/store'); ?>">
                 <input type="hidden" name="booking_id" id="bkCBookingId" value="">
                 <input type="hidden" name="payment_type" value="payment">
                 <input type="hidden" name="redirect_to" value="admin/bookings">
+
+                <!-- Amount to Collect Field -->
                 <div>
-                    <label>Amount to Collect</label>
-                    <input type="number" step="0.01" min="0" name="amount" id="bkCAmountInput" required>
-                </div>
-                <div>
-                    <label>Other Expenses (Optional)</label>
-                    <input type="number" step="0.01" min="0" name="other_expenses" id="bkCOtherExpenses" placeholder="Toll, parking, fuel surcharge, etc.">
-                </div>
-                <div class="bk-collect-grid">
-                    <div>
-                        <label>Payment Mode</label>
-                        <select name="payment_mode" required>
-                            <option value="Cash">Cash</option>
-                            <option value="UPI">UPI</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Card">Card</option>
-                        </select>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <label style="margin:0;font-size:12px;font-weight:700;color:#1e293b;text-transform:none;letter-spacing:normal;">Amount to Collect</label>
+                        <span id="bkCAutoFillBadge" style="font-size:11px;font-weight:600;color:#2563eb;cursor:pointer;background:#eff6ff;padding:2px 8px;border-radius:6px;border:1px solid #bfdbfe;transition:all 0.15s ease;">
+                            ⚡ Full Balance
+                        </span>
                     </div>
-                    <div>
-                        <label>Reference No</label>
-                        <input type="text" name="reference_no" placeholder="Optional reference">
+                    <div class="bk-input-currency-wrap">
+                        <span class="bk-currency-symbol">₹</span>
+                        <input type="number" step="0.01" min="0" name="amount" id="bkCAmountInput" required class="bk-input-amount" placeholder="0.00">
                     </div>
                 </div>
+
+                <!-- Payment Method Cards -->
                 <div>
-                    <label>Notes</label>
-                    <textarea name="notes" placeholder="Add a collection note or receipt remark…"></textarea>
+                    <label style="font-size:12px;font-weight:700;color:#1e293b;text-transform:none;letter-spacing:normal;margin-bottom:6px;display:block;">Select Payment Mode</label>
+                    <div class="bk-mode-cards-grid">
+                        <!-- Razorpay Card -->
+                        <div class="bk-mode-card" id="bkModeCardRazorpay" onclick="window.selectCollectMode('Razorpay')">
+                            <div class="bk-mode-radio-circle"></div>
+                            <div class="bk-mode-card-content" style="flex:1;">
+                                <div class="bk-mode-card-title">
+                                    <span>⚡ Online (Razorpay)</span>
+                                    <span class="bk-mode-badge rzp">Instant</span>
+                                </div>
+                                <div class="bk-mode-card-desc">Collect via UPI QR, GPay, PhonePe, Cards, NetBanking</div>
+                            </div>
+                        </div>
+
+                        <!-- Cash Card -->
+                        <div class="bk-mode-card" id="bkModeCardCash" onclick="window.selectCollectMode('Cash')">
+                            <div class="bk-mode-radio-circle"></div>
+                            <div class="bk-mode-card-content" style="flex:1;">
+                                <div class="bk-mode-card-title">
+                                    <span>💵 Cash Payment</span>
+                                    <span class="bk-mode-badge cash">Direct</span>
+                                </div>
+                                <div class="bk-mode-card-desc">Receive physical cash directly from customer</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Synced select dropdown for compatibility -->
+                    <select name="payment_mode" id="bkCPaymentMode" style="display:none;" required>
+                        <option value="Cash">Cash</option>
+                        <option value="Razorpay">Razorpay</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Card">Card</option>
+                    </select>
                 </div>
-                <div class="bk-modal-actions">
-                    <button class="bk-btn-line" type="button" data-close-modal="bkCollectModal">Cancel</button>
-                    <button class="bk-btn" type="submit">Save Payment</button>
+
+                <!-- Razorpay Info Box -->
+                <div id="bkCRazorpayInfo" class="bk-rzp-notice" style="display:none;">
+                    <div style="font-size:20px;line-height:1;">⚡</div>
+                    <div>
+                        <strong style="color:#1e3a8a;">Razorpay Live Payment:</strong>
+                        <div style="margin-top:2px;font-size:12px;color:#1e40af;line-height:1.4;">
+                            Clicking the button will launch the secure Razorpay Checkout to collect <strong id="bkCRzpAmountBadge">₹0.00</strong>. Once payment succeeds, the booking is instantly marked as Paid.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Expenses & Reference No in a 2-col row -->
+                <div class="bk-collect-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-top:2px;">
+                    <div>
+                        <label style="font-size:11px;font-weight:600;color:#64748b;text-transform:none;letter-spacing:normal;margin-bottom:4px;">Other Expenses (Optional)</label>
+                        <input type="number" step="0.01" min="0" name="other_expenses" id="bkCOtherExpenses" placeholder="Toll, parking, etc." style="height:38px;border-radius:8px;font-size:13px;">
+                    </div>
+                    <div>
+                        <label id="bkCRefLabel" style="font-size:11px;font-weight:600;color:#64748b;text-transform:none;letter-spacing:normal;margin-bottom:4px;">Reference No</label>
+                        <input type="text" name="reference_no" id="bkCReferenceNo" placeholder="Auto-generated by Razorpay" style="height:38px;border-radius:8px;font-size:13px;">
+                    </div>
+                </div>
+
+                <!-- Notes Field -->
+                <div>
+                    <label style="font-size:11px;font-weight:600;color:#64748b;text-transform:none;letter-spacing:normal;margin-bottom:4px;">Collection Remarks (Optional)</label>
+                    <textarea name="notes" id="bkCNotes" placeholder="Add a collection note or receipt remark…" style="height:55px;border-radius:8px;font-size:13px;"></textarea>
+                </div>
+
+                <div class="bk-detail-note" id="bkCNote" style="margin-top:2px;border-radius:8px;font-size:11px;padding:8px 12px;">Save the payment and then share the thank-you message with the customer.</div>
+
+                <!-- Action Buttons -->
+                <div class="bk-modal-actions" style="margin-top:12px;">
+                    <button class="bk-btn-light" type="button" data-close-modal="bkCollectModal" style="height:44px;padding:0 20px;border-radius:10px;font-size:13px;">Cancel</button>
+                    <button class="bk-btn-primary" type="submit" id="bkCSubmitBtn" style="height:44px;padding:0 24px;border-radius:10px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:8px;">
+                        <span>Save Payment</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Admin Razorpay Loading Overlay -->
+<div class="loading-overlay" id="bkLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(3px);z-index:99999;align-items:center;justify-content:center;color:#fff;flex-direction:column;gap:12px;font-weight:700;font-size:15px;">
+    <div style="width:42px;height:42px;border:3.5px solid rgba(255,255,255,0.25);border-radius:50%;border-top-color:#fff;animation:bkSpinOverlay 0.8s ease-in-out infinite;"></div>
+    <div id="bkLoadingText">Connecting to Razorpay...</div>
+</div>
+<style>
+@keyframes bkSpinOverlay { to { transform: rotate(360deg); } }
+</style>
 
 <script>
     (function() {
@@ -1982,12 +2362,19 @@ unset($booking);
 
             setText('bkDTotal', fmt(totalAmount));
 
-            // These might not exist, so check
-            var paidEl = document.getElementById('bkDPaid');
-            if (paidEl) paidEl.textContent = fmt(paidAmount);
+            // Payment details in modal
+            var pMode = d.payment_mode || 'Cash';
+            setText('bkDPayMode', (pMode.toLowerCase() === 'razorpay' ? '⚡ Online (Razorpay)' : '💵 Cash'));
+            setText('bkDPayStatus', d.payment_status || 'Pending');
+            setText('bkDPaidAmt', fmt(paidAmount));
+            setText('bkDBalAmt', fmt(balanceAmount));
 
-            var balanceEl = document.getElementById('bkDBalance');
-            if (balanceEl) balanceEl.textContent = fmt(balanceAmount);
+            if (d.razorpay_payment_id) {
+                setText('bkDRazorpayId', d.razorpay_payment_id);
+                setDisplay('bkDRazorpayRow', '');
+            } else {
+                setDisplay('bkDRazorpayRow', 'none');
+            }
 
             var noteEl = document.getElementById('bkDetailNote');
             if (noteEl) {
@@ -1997,6 +2384,7 @@ unset($booking);
                     'A total of Rs ' + paidAmount.toFixed(2) + ' has been received for this booking so far.';
             }
 
+            var pMode = row.getAttribute('data-payment-mode') || (d ? d.payment_mode : '') || 'Cash';
             currentCollect = {
                 bookingId: row.getAttribute('data-booking-id') || '',
                 bookingCode: row.getAttribute('data-booking-code') || '',
@@ -2005,12 +2393,20 @@ unset($booking);
                 amount: totalAmount.toFixed(2),
                 paid: paidAmount.toFixed(2),
                 balance: balanceAmount.toFixed(2),
+                paymentMode: pMode,
                 whatsappUrl: d.collection_whatsapp_url || '',
                 fullData: d
             };
 
             var hasBalance = balanceAmount > 0.01;
-            setDisplay('bkDetailCollectBtn', hasBalance ? 'inline-flex' : 'none');
+            if (detailCollectBtn) {
+                if (hasBalance) {
+                    detailCollectBtn.innerHTML = '<i class="ti ti-coin-rupee" style="font-size:16px;"></i> Collect Payment (' + fmt(balanceAmount) + ')';
+                    detailCollectBtn.style.display = 'inline-flex';
+                } else {
+                    detailCollectBtn.style.display = 'none';
+                }
+            }
 
             if (detailReminderBtn && currentCollect.customerPhone && hasBalance) {
                 detailReminderBtn.style.display = 'inline-flex';
@@ -2029,20 +2425,108 @@ unset($booking);
             }
         }
 
+        var pModeSelect = document.getElementById('bkCPaymentMode');
+        var rzpNotice = document.getElementById('bkCRazorpayInfo');
+        var submitBtn = document.getElementById('bkCSubmitBtn');
+        var amountInput = document.getElementById('bkCAmountInput');
+        var refInput = document.getElementById('bkCReferenceNo');
+        var autoFillBadge = document.getElementById('bkCAutoFillBadge');
+
+        function selectCollectMode(mode) {
+            if (pModeSelect) {
+                pModeSelect.value = mode;
+            }
+            var cardRzp = document.getElementById('bkModeCardRazorpay');
+            var cardCash = document.getElementById('bkModeCardCash');
+            if (mode === 'Razorpay') {
+                if (cardRzp) cardRzp.className = 'bk-mode-card active-rzp';
+                if (cardCash) cardCash.className = 'bk-mode-card';
+            } else {
+                if (cardRzp) cardRzp.className = 'bk-mode-card';
+                if (cardCash) cardCash.className = 'bk-mode-card active-cash';
+            }
+            updateCollectModalUI();
+        }
+        window.selectCollectMode = selectCollectMode;
+
+        function updateCollectModalUI() {
+            var mode = pModeSelect ? pModeSelect.value : 'Cash';
+            var amt = parseFloat(amountInput ? amountInput.value : '0') || 0;
+            var amtStr = fmt(amt);
+
+            var cardRzp = document.getElementById('bkModeCardRazorpay');
+            var cardCash = document.getElementById('bkModeCardCash');
+
+            if (mode === 'Razorpay') {
+                if (cardRzp) cardRzp.className = 'bk-mode-card active-rzp';
+                if (cardCash) cardCash.className = 'bk-mode-card';
+                if (rzpNotice) rzpNotice.style.display = 'flex';
+                var rzpBadge = document.getElementById('bkCRzpAmountBadge');
+                if (rzpBadge) rzpBadge.textContent = amtStr;
+                if (submitBtn) {
+                    submitBtn.innerHTML = '⚡ Collect ' + amtStr + ' via Razorpay';
+                    submitBtn.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+                    submitBtn.style.borderColor = '#1d4ed8';
+                    submitBtn.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.4)';
+                    submitBtn.style.color = '#ffffff';
+                }
+                if (refInput) {
+                    refInput.placeholder = 'Auto-generated by Razorpay';
+                    refInput.readOnly = true;
+                }
+            } else {
+                if (cardRzp) cardRzp.className = 'bk-mode-card';
+                if (cardCash) cardCash.className = 'bk-mode-card active-cash';
+                if (rzpNotice) rzpNotice.style.display = 'none';
+                if (submitBtn) {
+                    submitBtn.innerHTML = '💵 Record ' + amtStr + ' Cash Payment';
+                    submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    submitBtn.style.borderColor = '#059669';
+                    submitBtn.style.boxShadow = '0 4px 14px rgba(16, 185, 129, 0.4)';
+                    submitBtn.style.color = '#ffffff';
+                }
+                if (refInput) {
+                    refInput.placeholder = 'Optional reference / receipt no';
+                    refInput.readOnly = false;
+                }
+            }
+        }
+
+        if (pModeSelect) pModeSelect.addEventListener('change', updateCollectModalUI);
+        if (amountInput) amountInput.addEventListener('input', updateCollectModalUI);
+
+        if (autoFillBadge) {
+            autoFillBadge.addEventListener('click', function() {
+                if (currentCollect && currentCollect.balance && amountInput) {
+                    amountInput.value = parseFloat(currentCollect.balance || '0').toFixed(2);
+                    updateCollectModalUI();
+                }
+            });
+        }
+
         function fillCollect(data) {
             if (!data) return;
             document.getElementById('bkCBookingId').value = data.bookingId || '';
-            document.getElementById('bkCLabel').textContent = (data.bookingCode || '') + ' – ' + (data.customerName || '');
+            document.getElementById('bkCLabel').textContent = (data.bookingCode || '') + ' (' + (data.customerName || '') + ')';
             document.getElementById('bkCTotal').textContent = fmt(data.amount || 0);
             document.getElementById('bkCPaid').textContent = fmt(data.paid || 0);
             document.getElementById('bkCBalance').textContent = fmt(data.balance || 0);
-            document.getElementById('bkCAmountInput').value = parseFloat(data.balance || '0').toFixed(2);
+            if (amountInput) {
+                amountInput.value = parseFloat(data.balance || '0').toFixed(2);
+            }
             if (collectNote) {
                 var nextPaid = parseFloat(data.paid || 0) + parseFloat(data.balance || 0);
                 var totalAmount = parseFloat(data.amount || 0);
                 collectNote.textContent = nextPaid >= totalAmount && totalAmount > 0 ?
-                    'After saving this payment, the full booking amount will be collected at ' + fmt(nextPaid) + '. You can then send a complete thank-you and travel-again message to the customer on WhatsApp.' :
-                    'After saving this payment, the total collected amount will become ' + fmt(nextPaid) + ' for this booking. You can then send a thank-you message to the customer on WhatsApp.';
+                    'Full payment of ' + fmt(nextPaid) + ' will be settled with this collection.' :
+                    'Total collected payment will reach ' + fmt(nextPaid) + ' for this booking.';
+            }
+
+            var prevMode = (data.paymentMode || (data.fullData && data.fullData.payment_mode) || '').toLowerCase();
+            if (prevMode === 'razorpay' || prevMode === 'online') {
+                selectCollectMode('Razorpay');
+            } else {
+                selectCollectMode('Cash');
             }
         }
 
@@ -2060,14 +2544,19 @@ unset($booking);
             });
             row.querySelectorAll('.js-bk-collect').forEach(function(btn) {
                 btn.addEventListener('click', function() {
+                    var d = parseDetail(row);
+                    var pMode = row.getAttribute('data-payment-mode') || (d ? d.payment_mode : '') || 'Cash';
                     currentCollect = {
                         bookingId: row.getAttribute('data-booking-id') || '',
                         bookingCode: row.getAttribute('data-booking-code') || '',
                         customerName: row.getAttribute('data-booking-customer') || '',
-                        amount: row.getAttribute('data-amount') || '0',
-                        paid: row.getAttribute('data-paid') || '0',
-                        balance: row.getAttribute('data-balance') || '0',
-                        whatsappUrl: ''
+                        customerPhone: d ? (d.customer_phone || '') : '',
+                        amount: row.getAttribute('data-amount') || (d ? d.amount : '0'),
+                        paid: row.getAttribute('data-paid') || (d ? d.paid_amount : '0'),
+                        balance: row.getAttribute('data-balance') || (d ? d.balance_amount : '0'),
+                        paymentMode: pMode,
+                        whatsappUrl: d ? (d.collection_whatsapp_url || '') : '',
+                        fullData: d
                     };
                     fillCollect(currentCollect);
                     openModal(collectModal);
@@ -2123,5 +2612,129 @@ unset($booking);
             }
         });
 
+        /* ── Collect Payment Form Submit (Razorpay Intercept) ── */
+        var collectForm = document.getElementById('bkCollectForm');
+        if (collectForm) {
+            collectForm.addEventListener('submit', function(e) {
+                var mode = pModeSelect ? pModeSelect.value : 'Cash';
+                if (mode !== 'Razorpay') {
+                    // Normal form submission for Cash, UPI, Bank Transfer, Card!
+                    // Cash flow remains completely uninterrupted!
+                    return true;
+                }
+
+                // Intercept ONLY when Online (Razorpay) is selected
+                e.preventDefault();
+
+                var bookingId = document.getElementById('bkCBookingId').value;
+                var amountVal = parseFloat(amountInput ? amountInput.value : '0') || 0;
+                var otherExpenses = parseFloat(document.getElementById('bkCOtherExpenses') ? document.getElementById('bkCOtherExpenses').value : '0') || 0;
+                var notesVal = document.getElementById('bkCNotes') ? document.getElementById('bkCNotes').value : '';
+
+                if (amountVal <= 0) {
+                    alert('Please enter a valid amount to collect.');
+                    return;
+                }
+
+                var overlay = document.getElementById('bkLoadingOverlay');
+                var loadingText = document.getElementById('bkLoadingText');
+                if (overlay) {
+                    loadingText.textContent = 'Initializing Razorpay payment...';
+                    overlay.style.display = 'flex';
+                }
+                if (submitBtn) submitBtn.disabled = true;
+
+                var orderData = new FormData();
+                orderData.append('booking_id', bookingId);
+                orderData.append('amount', amountVal);
+
+                fetch('<?php echo base_url('admin/payments/create_razorpay_order'); ?>', {
+                    method: 'POST',
+                    body: orderData
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (overlay) overlay.style.display = 'none';
+                    if (submitBtn) submitBtn.disabled = false;
+
+                    if (!data.success) {
+                        alert(data.message || 'Unable to initiate Razorpay order. Please try again or select Cash.');
+                        return;
+                    }
+
+                    var options = {
+                        "key": data.key_id,
+                        "amount": data.amount,
+                        "currency": data.currency,
+                        "name": data.company_name,
+                        "description": data.description,
+                        "image": data.logo_url,
+                        "order_id": data.order_id,
+                        "handler": function(response) {
+                            if (overlay) {
+                                loadingText.textContent = 'Verifying payment with bank...';
+                                overlay.style.display = 'flex';
+                            }
+
+                            var verifyData = new FormData();
+                            verifyData.append('booking_id', bookingId);
+                            verifyData.append('amount', amountVal);
+                            verifyData.append('other_expenses', otherExpenses);
+                            verifyData.append('notes', notesVal);
+                            verifyData.append('razorpay_payment_id', response.razorpay_payment_id || '');
+                            verifyData.append('razorpay_order_id', response.razorpay_order_id || '');
+                            verifyData.append('razorpay_signature', response.razorpay_signature || '');
+
+                            fetch('<?php echo base_url('admin/payments/verify_razorpay'); ?>', {
+                                method: 'POST',
+                                body: verifyData
+                            })
+                            .then(function(vRes) { return vRes.json(); })
+                            .then(function(vData) {
+                                if (overlay) overlay.style.display = 'none';
+                                if (vData.success) {
+                                    window.location.reload();
+                                } else {
+                                    alert(vData.message || 'Payment verification failed. Please contact support.');
+                                }
+                            })
+                            .catch(function(err) {
+                                if (overlay) overlay.style.display = 'none';
+                                alert('Network error during verification. Payment ID: ' + response.razorpay_payment_id);
+                            });
+                        },
+                        "prefill": {
+                            "name": data.customer_name,
+                            "contact": data.customer_phone,
+                            "email": data.customer_email
+                        },
+                        "theme": {
+                            "color": data.theme_color
+                        },
+                        "modal": {
+                            "ondismiss": function() {
+                                if (submitBtn) submitBtn.disabled = false;
+                            }
+                        }
+                    };
+
+                    var rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function(resp) {
+                        if (overlay) overlay.style.display = 'none';
+                        alert('Payment failed: ' + (resp.error.description || 'Unknown error'));
+                    });
+                    rzp.open();
+                })
+                .catch(function(err) {
+                    if (overlay) overlay.style.display = 'none';
+                    if (submitBtn) submitBtn.disabled = false;
+                    alert('Failed to connect to payment server. Please try again or select Cash.');
+                });
+            });
+        }
+
     })();
 </script>
+
+<!-- Razorpay Checkout SDK for Admin Portal -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>

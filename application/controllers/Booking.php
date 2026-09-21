@@ -140,6 +140,8 @@ class Booking extends MY_Controller
             'hours_slot'       => $booking_type === 'hours' ? $hours_slot : 0,
             'requires_advance' => $requires_advance,
             'amount'           => $calculated_amount,
+            'payment_mode'     => 'Cash',
+            'payment_status'   => 'pending',
             'status'           => 'draft',
             '_skip_vehicle_booking' => true,
         );

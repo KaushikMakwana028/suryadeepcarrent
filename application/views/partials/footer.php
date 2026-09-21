@@ -154,7 +154,7 @@ $flash_error     = $this->session->flashdata('error');
                 <?php echo html_escape($contact_name); ?>
             </span>
 
-            <span class="footer-bottom-dot">·</span>
+            <!-- <span class="footer-bottom-dot">·</span>
 
             <span>
                 Developed by
@@ -163,7 +163,7 @@ $flash_error     = $this->session->flashdata('error');
                    rel="noopener noreferrer">
                     Vision Technolabs
                 </a>
-            </span>
+            </span> -->
 
         </div>
 

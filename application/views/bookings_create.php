@@ -479,7 +479,7 @@
 <section class="section-card step-shell">
     <div class="stepper">
         <?php
-        $steps = array(1 => 'Booking', 2 => 'Document');
+        $steps = array(1 => 'Booking', 2 => 'Document', 3 => 'Payment');
         foreach ($steps as $step_no => $step_label):
             $is_active = $current_step === $step_no;
             $is_done   = $current_step > $step_no;
@@ -683,8 +683,8 @@
         <div class="eyebrow">Next Steps</div>
         <div class="card-head">
             <div>
-                <h3>Booking first, then document upload.</h3>
-                <p>This page is step 1. After saving the booking, the next page opens for document upload to complete the booking request.</p>
+                <h3>Booking, documents, then payment.</h3>
+                <p>This page is step 1. After saving your trip details, upload documents, then select your payment method.</p>
             </div>
         </div>
         <div class="info-grid" style="grid-template-columns:1fr;">
@@ -695,6 +695,10 @@
             <div class="feature-card">
                 <strong>2. Document</strong>
                 <span>Upload Aadhaar Card and Driving License as image or PDF files.</span>
+            </div>
+            <div class="feature-card">
+                <strong>3. Payment</strong>
+                <span>Choose Cash on pickup or Pay Online securely via Razorpay.</span>
             </div>
         </div>
     </aside>

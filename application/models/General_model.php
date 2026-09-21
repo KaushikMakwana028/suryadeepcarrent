@@ -21,6 +21,7 @@ class General_model extends CI_Model
         $this->ensure_vehicle_pricing_columns();
         $this->ensure_booking_pricing_columns();
         $this->ensure_booking_status_values();
+        $this->ensure_booking_payment_columns();
         $this->cleanup_orphan_temporary_customers();
     }
 
@@ -732,23 +733,41 @@ class General_model extends CI_Model
             'updated_at' => date('Y-m-d H:i:s'),
         );
 
-        if ($paid_amount >= (float) $booking['amount'] && (float) $booking['amount'] > 0) {
-            $update['status'] = 'completed';
-            $result = $this->update('bookings', array('id' => $booking_id), $update);
+        $total_amount = (float) $booking['amount'];
+        $advance_amount = isset($booking['advance_amount']) && (float) $booking['advance_amount'] > 0
+            ? (float) $booking['advance_amount']
+            : 1000.00;
 
-            if (!empty($booking['vehicle_id'])) {
-                $this->update('vehicles', array('id' => (int) $booking['vehicle_id']), array('status' => 'available'));
+        $today = date('Y-m-d');
+        $is_trip_finished = (!empty($booking['return_date']) && $booking['return_date'] < $today);
+
+        if ($paid_amount >= $total_amount && $total_amount > 0) {
+            $update['payment_status'] = 'paid';
+            if ($is_trip_finished) {
+                $update['status'] = 'completed';
+                if (!empty($booking['vehicle_id'])) {
+                    $this->update('vehicles', array('id' => (int) $booking['vehicle_id']), array('status' => 'available'));
+                }
+            } elseif (!isset($booking['status']) || $booking['status'] === 'pending') {
+                $update['status'] = 'confirmed';
             }
-
-            return $result;
+            return $this->update('bookings', array('id' => $booking_id), $update);
         }
 
-        if ($paid_amount > 0 && (!isset($booking['status']) || $booking['status'] === 'pending')) {
-            $update['status'] = 'confirmed';
-            return $this->update('bookings', array('id' => $booking_id), array(
-                'status' => 'confirmed',
-                'updated_at' => $update['updated_at'],
-            ));
+        if ($paid_amount >= $advance_amount && $advance_amount > 0) {
+            $update['payment_status'] = 'advance_paid';
+            if (!isset($booking['status']) || $booking['status'] === 'pending') {
+                $update['status'] = 'confirmed';
+            }
+            return $this->update('bookings', array('id' => $booking_id), $update);
+        }
+
+        if ($paid_amount > 0) {
+            $update['payment_status'] = 'part_paid';
+            if (!isset($booking['status']) || $booking['status'] === 'pending') {
+                $update['status'] = 'confirmed';
+            }
+            return $this->update('bookings', array('id' => $booking_id), $update);
         }
 
         return true;
@@ -1554,7 +1573,13 @@ class General_model extends CI_Model
         foreach ($bookings as &$booking) {
             $paid_amount = isset($payment_totals[$booking['id']]) ? (float) $payment_totals[$booking['id']] : 0;
             $amount = (float) $booking['amount'];
-            $advance_amount = isset($booking['advance_amount']) ? (float) $booking['advance_amount'] : 0;
+            $advance_amount = isset($booking['advance_amount']) && (float) $booking['advance_amount'] > 0
+                ? (float) $booking['advance_amount']
+                : 1000.00;
+            if ($amount > 0 && $advance_amount > $amount) {
+                $advance_amount = $amount;
+            }
+            $booking['advance_amount'] = $advance_amount;
             $balance_amount = max(0, $amount - $paid_amount);
             $request_row = isset($payment_request_map[$booking['id']]) ? $payment_request_map[$booking['id']] : array();
 
@@ -1576,10 +1601,24 @@ class General_model extends CI_Model
             if ($booking['effective_status'] === 'pending' && $paid_amount > 0) {
                 $booking['effective_status'] = 'confirmed';
             }
-            $booking['payment_status'] = $booking['requires_advance']
-                ? $this->resolve_payment_status($paid_amount, $advance_amount, $amount)
-                : 'Not Required';
-            $booking['payment_badge'] = strtolower(str_replace(' ', '-', $booking['payment_status']));
+            $payment_mode = !empty($booking['payment_mode']) ? $booking['payment_mode'] : 'Cash';
+            $booking['payment_mode'] = $payment_mode;
+            $booking['razorpay_payment_id'] = !empty($booking['razorpay_payment_id']) ? $booking['razorpay_payment_id'] : '';
+            $booking['razorpay_order_id'] = !empty($booking['razorpay_order_id']) ? $booking['razorpay_order_id'] : '';
+            $booking['razorpay_signature'] = !empty($booking['razorpay_signature']) ? $booking['razorpay_signature'] : '';
+
+            if ($paid_amount > 0) {
+                $booking['payment_status'] = $this->resolve_payment_status($paid_amount, $advance_amount, $amount);
+            } elseif (strtolower($payment_mode) === 'cash') {
+                $booking['payment_status'] = 'Cash (Pending)';
+            } elseif (strtolower($payment_mode) === 'razorpay') {
+                $booking['payment_status'] = 'Pending';
+            } else {
+                $booking['payment_status'] = $booking['requires_advance']
+                    ? $this->resolve_payment_status($paid_amount, $advance_amount, $amount)
+                    : 'Pending';
+            }
+            $booking['payment_badge'] = strtolower(str_replace(array(' ', '(', ')'), array('-', '', ''), $booking['payment_status']));
             $booking['payment_request_id'] = !empty($request_row) ? (int) $request_row['id'] : 0;
             $booking['payment_request_status'] = !empty($request_row) ? $request_row['status'] : '';
             $booking['payment_request_type'] = !empty($request_row) ? $request_row['payment_type'] : '';
@@ -1706,6 +1745,33 @@ class General_model extends CI_Model
         }
 
         $this->db->query("UPDATE `bookings` SET `status` = 'draft' WHERE `status` IS NULL OR `status` = ''");
+    }
+
+    private function ensure_booking_payment_columns()
+    {
+        if (!$this->db->table_exists('bookings')) {
+            return;
+        }
+
+        if (!$this->db->field_exists('payment_mode', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `payment_mode` VARCHAR(50) DEFAULT 'Cash' AFTER `status`");
+        }
+
+        if (!$this->db->field_exists('payment_status', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `payment_status` VARCHAR(50) DEFAULT 'pending' AFTER `payment_mode`");
+        }
+
+        if (!$this->db->field_exists('razorpay_order_id', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `razorpay_order_id` VARCHAR(100) DEFAULT NULL AFTER `payment_status`");
+        }
+
+        if (!$this->db->field_exists('razorpay_payment_id', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `razorpay_payment_id` VARCHAR(100) DEFAULT NULL AFTER `razorpay_order_id`");
+        }
+
+        if (!$this->db->field_exists('razorpay_signature', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `razorpay_signature` VARCHAR(255) DEFAULT NULL AFTER `razorpay_payment_id`");
+        }
     }
 
     private function cleanup_orphan_temporary_customers()
