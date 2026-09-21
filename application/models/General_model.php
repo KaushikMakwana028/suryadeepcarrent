@@ -1,0 +1,2209 @@
+<?php
+defined('BASEPATH') or exit('No direct script access allowed');
+
+class General_model extends CI_Model
+{
+    private $document_types = array(
+        'Driving License',
+        'Aadhaar Card',
+    );
+
+    private $required_booking_documents = array(
+        'Driving License',
+        'Aadhaar Card',
+    );
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensure_users_profile_columns();
+        $this->ensure_users_booking_columns();
+        $this->ensure_vehicle_pricing_columns();
+        $this->ensure_booking_pricing_columns();
+        $this->ensure_booking_status_values();
+        $this->cleanup_orphan_temporary_customers();
+    }
+
+    public function get_all($table, $where = array(), $order_by = 'id DESC')
+    {
+        if (!empty($where)) {
+            $this->db->where($where);
+        }
+
+        if (!empty($order_by)) {
+            $this->db->order_by($order_by);
+        }
+
+        return $this->db->get($table)->result_array();
+    }
+
+    public function get_row($table, $where = array())
+    {
+        return $this->db->get_where($table, $where)->row_array();
+    }
+
+    public function get_user_by_id($user_id)
+    {
+        $user = $this->get_row('users', array('id' => (int) $user_id));
+        if (empty($user)) {
+            return array();
+        }
+
+        unset($user['password']);
+        return $user;
+    }
+
+    public function insert($table, $data)
+    {
+        $this->db->insert($table, $data);
+        return $this->db->insert_id();
+    }
+
+    public function update($table, $where, $data)
+    {
+        return $this->db->where($where)->update($table, $data);
+    }
+
+    public function delete($table, $where)
+    {
+        return $this->db->where($where)->delete($table);
+    }
+
+    public function count_rows($table, $where = array())
+    {
+        if (!empty($where)) {
+            $this->db->where($where);
+        }
+
+        return (int) $this->db->count_all_results($table);
+    }
+
+    public function authenticate_user($login_id, $password, $role)
+    {
+        $login_id = trim((string) $login_id);
+        $normalized_phone = $this->normalize_indian_phone($login_id);
+
+        $this->db->group_start();
+        $this->db->where('email', $login_id);
+        $this->db->or_where('phone', $login_id);
+        if ($this->is_valid_indian_phone($normalized_phone) && $normalized_phone !== $login_id) {
+            $this->db->or_where('phone', $normalized_phone);
+        }
+        $this->db->group_end();
+
+        $user = $this->db
+            ->where(array('role' => (int) $role, 'status' => 1))
+            ->get('users')
+            ->row_array();
+
+        if (!$user) {
+            return array();
+        }
+
+        $password_matches = password_verify($password, $user['password']) || $user['password'] === $password;
+        if (!$password_matches) {
+            return array();
+        }
+
+        if ($user['password'] === $password || password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
+            $new_hash = password_hash($password, PASSWORD_DEFAULT);
+            $this->db->where('id', $user['id'])->update('users', array('password' => $new_hash));
+        }
+
+        unset($user['password']);
+        return $user;
+    }
+
+    public function create_user($data)
+    {
+        $data['phone'] = $this->normalize_indian_phone(isset($data['phone']) ? $data['phone'] : '');
+        if (!$this->is_valid_indian_phone($data['phone'])) {
+            return array('status' => false, 'message' => 'Enter a valid 10-digit mobile number. You may start with +91.');
+        }
+
+        $existing = $this->get_row('users', array('email' => $data['email']));
+        if (!empty($existing)) {
+            return array('status' => false, 'message' => 'Email already exists.');
+        }
+
+        $existing_phone = $this->get_row('users', array('phone' => $data['phone']));
+        if (!empty($existing_phone)) {
+            return array('status' => false, 'message' => 'Mobile number already exists.');
+        }
+
+        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        $data['role'] = (int) $data['role'];
+        $data['created_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        $data['status'] = 1;
+
+        $user_id = $this->insert('users', $data);
+        return array('status' => true, 'user_id' => $user_id);
+    }
+
+    public function resolve_customer_account($full_name, $phone, $email = '')
+    {
+        $full_name = trim($full_name);
+        $phone = $this->normalize_indian_phone($phone);
+        $email = trim($email);
+
+        if ($phone !== '') {
+            $existing_customer = $this->get_row('users', array(
+                'phone' => $phone,
+                'role' => 0,
+            ));
+
+            if (!empty($existing_customer)) {
+                $update = array();
+                if ($full_name !== '' && $existing_customer['full_name'] !== $full_name) {
+                    $update['full_name'] = $full_name;
+                }
+                if ($email !== '' && $existing_customer['email'] !== $email) {
+                    $update['email'] = $this->build_customer_email($email, $phone, (int) $existing_customer['id']);
+                }
+
+                if (!empty($update)) {
+                    $this->update_user_profile((int) $existing_customer['id'], $update);
+                }
+
+                return (int) $existing_customer['id'];
+            }
+        }
+
+        if ($email !== '') {
+            $existing_customer = $this->get_row('users', array(
+                'email' => $email,
+                'role' => 0,
+            ));
+
+            if (!empty($existing_customer)) {
+                $update = array();
+                if ($full_name !== '' && $existing_customer['full_name'] !== $full_name) {
+                    $update['full_name'] = $full_name;
+                }
+                if ($phone !== '' && $existing_customer['phone'] !== $phone) {
+                    $update['phone'] = $phone;
+                }
+
+                if (!empty($update)) {
+                    $this->update_user_profile((int) $existing_customer['id'], $update);
+                }
+
+                return (int) $existing_customer['id'];
+            }
+        }
+
+        $password_seed = bin2hex(random_bytes(8));
+
+        return (int) $this->insert('users', array(
+            'full_name' => $full_name !== '' ? $full_name : 'Customer',
+            'email' => $this->build_customer_email($email, $phone),
+            'phone' => $phone,
+            'password' => password_hash($password_seed, PASSWORD_DEFAULT),
+            'role' => 0,
+            'status' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ));
+    }
+
+    public function update_user_profile($user_id, $data)
+    {
+        if (array_key_exists('phone', $data)) {
+            $data['phone'] = $this->normalize_indian_phone($data['phone']);
+        }
+
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        return $this->update('users', array('id' => (int) $user_id), $data);
+    }
+
+    public function verify_user_password($user_id, $password)
+    {
+        $user = $this->db->select('password')->get_where('users', array('id' => (int) $user_id))->row_array();
+        if (empty($user['password'])) {
+            return false;
+        }
+
+        return password_verify($password, $user['password']);
+    }
+
+    public function update_user_password($user_id, $new_password)
+    {
+        return $this->update('users', array('id' => (int) $user_id), array(
+            'password' => password_hash($new_password, PASSWORD_DEFAULT),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ));
+    }
+
+    public function get_dashboard_counts($role = 'admin', $user_id = 0)
+    {
+        $vehicles = $this->get_vehicles_with_live_status();
+        $available_vehicles = 0;
+
+        foreach ($vehicles as $vehicle) {
+            if (isset($vehicle['status']) && $vehicle['status'] === 'available') {
+                $available_vehicles++;
+            }
+        }
+
+        $counts = array(
+            'total_customers' => (int) $this->db->where('role', 0)->count_all_results('users'),
+            'total_vehicles' => count($vehicles),
+            'available_vehicles' => $available_vehicles,
+            'total_bookings' => (int) $this->db->where('status !=', 'draft')->count_all_results('bookings'),
+            'pending_bookings' => (int) $this->db->where(array('status' => 'pending'))->count_all_results('bookings'),
+        );
+
+        if ($role === 'customer' && $user_id > 0) {
+            $counts['my_bookings'] = (int) $this->db
+                ->where('customer_id', $user_id)
+                ->where('status !=', 'draft')
+                ->count_all_results('bookings');
+            $counts['my_pending_bookings'] = (int) $this->db
+                ->where(array('customer_id' => $user_id, 'status' => 'pending'))
+                ->count_all_results('bookings');
+        }
+
+        return $counts;
+    }
+
+    public function get_bookings($filters = array())
+    {
+        $include_drafts = !empty($filters['include_drafts']);
+        unset($filters['include_drafts']);
+
+        $this->db->select('bookings.*, users.full_name AS customer_name, users.phone AS customer_phone, vehicles.name AS vehicle_name, vehicles.registration_no, vehicles.advance_amount, vehicles.image AS vehicle_image');
+        $this->db->from('bookings');
+        $this->db->join('users', 'users.id = bookings.customer_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+
+        if ($include_drafts) {
+            $this->db->where_in('bookings.status', array('draft', 'pending', 'confirmed', 'completed', 'cancelled'));
+        } else {
+            $this->db->where_in('bookings.status', array('pending', 'confirmed', 'completed', 'cancelled'));
+        }
+
+        if (!empty($filters)) {
+            $this->db->where($filters);
+        }
+
+        $this->db->order_by('bookings.id', 'DESC');
+        $bookings = $this->db->get()->result_array();
+
+        return $this->enrich_bookings($bookings);
+    }
+
+    private function booking_search_sql_and_bindings($search, $include_drafts = false)
+    {
+        $sql = "
+            FROM bookings
+            LEFT JOIN users ON users.id = bookings.customer_id
+            LEFT JOIN vehicles ON vehicles.id = bookings.vehicle_id
+            LEFT JOIN (
+                SELECT booking_id, SUM(amount) AS paid_sum
+                FROM payments
+                GROUP BY booking_id
+            ) payment_totals ON payment_totals.booking_id = bookings.id
+            WHERE bookings.status IN (" . ($include_drafts ? "'draft','pending','confirmed','completed','cancelled'" : "'pending','confirmed','completed','cancelled'") . ")
+        ";
+
+        $bindings = array();
+        $search = trim((string) $search);
+        if ($search !== '') {
+            $sql .= " AND (
+                users.full_name LIKE ? OR
+                users.phone LIKE ? OR
+                vehicles.name LIKE ? OR
+                vehicles.registration_no LIKE ? OR
+                bookings.pickup_location LIKE ? OR
+                bookings.drop_location LIKE ?
+            )";
+            $like = '%' . $search . '%';
+            $bindings = array_merge($bindings, array($like, $like, $like, $like, $like, $like));
+        }
+
+        return array($sql, $bindings);
+    }
+
+    private function booking_display_status_sql_condition($status_filter)
+    {
+        // Mirrors the display_status logic used in bookings_list.php:
+        // completed -> completed; pickup_date > today -> upcoming;
+        // confirmed (or pending-with-a-payment) -> active; else pending.
+        switch ($status_filter) {
+            case 'completed':
+                return "bookings.status = 'completed'";
+            case 'upcoming':
+                return "bookings.status != 'completed' AND bookings.pickup_date > CURDATE()";
+            case 'active':
+                return "bookings.status != 'completed' AND bookings.pickup_date <= CURDATE() AND (bookings.status = 'confirmed' OR (bookings.status = 'pending' AND COALESCE(payment_totals.paid_sum, 0) > 0))";
+            case 'pending':
+                return "bookings.status != 'completed' AND bookings.pickup_date <= CURDATE() AND NOT (bookings.status = 'confirmed' OR (bookings.status = 'pending' AND COALESCE(payment_totals.paid_sum, 0) > 0))";
+            default:
+                return '1=1';
+        }
+    }
+
+    private function normalize_booking_status_filter($status_filter)
+    {
+        $status_filter = strtolower(trim((string) $status_filter));
+        return in_array($status_filter, array('all', 'active', 'pending', 'upcoming', 'completed'), true) ? $status_filter : 'all';
+    }
+
+    public function count_bookings_filtered($search = '', $status_filter = 'all', $include_drafts = false)
+    {
+        list($from_where, $bindings) = $this->booking_search_sql_and_bindings($search, $include_drafts);
+
+        $status_filter = $this->normalize_booking_status_filter($status_filter);
+        $condition_sql = $status_filter !== 'all' ? ' AND ' . $this->booking_display_status_sql_condition($status_filter) : '';
+
+        $sql = "SELECT COUNT(*) AS total_rows " . $from_where . $condition_sql;
+        $row = $this->db->query($sql, $bindings)->row_array();
+
+        return !empty($row['total_rows']) ? (int) $row['total_rows'] : 0;
+    }
+
+    public function get_booking_status_counts($search = '', $include_drafts = false)
+    {
+        list($from_where, $bindings) = $this->booking_search_sql_and_bindings($search, $include_drafts);
+
+        $counts = array('all' => 0, 'active' => 0, 'pending' => 0, 'upcoming' => 0, 'completed' => 0);
+
+        $counts['all'] = (int) $this->db->query("SELECT COUNT(*) AS total_rows " . $from_where, $bindings)->row('total_rows');
+
+        foreach (array('active', 'pending', 'upcoming', 'completed') as $status_filter) {
+            $condition_sql = $this->booking_display_status_sql_condition($status_filter);
+            $sql = "SELECT COUNT(*) AS total_rows " . $from_where . " AND " . $condition_sql;
+            $counts[$status_filter] = (int) $this->db->query($sql, $bindings)->row('total_rows');
+        }
+
+        return $counts;
+    }
+
+    public function get_booking_revenue_total($search = '', $include_drafts = false)
+    {
+        list($from_where, $bindings) = $this->booking_search_sql_and_bindings($search, $include_drafts);
+        $sql = "SELECT COALESCE(SUM(bookings.amount), 0) AS revenue " . $from_where;
+
+        return (float) $this->db->query($sql, $bindings)->row('revenue');
+    }
+
+    public function get_bookings_paginated($limit, $offset, $search = '', $status_filter = 'all', $include_drafts = false)
+    {
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+
+        list($from_where, $bindings) = $this->booking_search_sql_and_bindings($search, $include_drafts);
+
+        $status_filter = $this->normalize_booking_status_filter($status_filter);
+        $condition_sql = $status_filter !== 'all' ? ' AND ' . $this->booking_display_status_sql_condition($status_filter) : '';
+
+        $sql = "
+            SELECT bookings.*, users.full_name AS customer_name, users.phone AS customer_phone,
+                   vehicles.name AS vehicle_name, vehicles.registration_no, vehicles.advance_amount,
+                   vehicles.image AS vehicle_image
+            " . $from_where . $condition_sql . "
+            ORDER BY
+                (bookings.status = 'completed') ASC,
+                ABS(DATEDIFF(bookings.pickup_date, CURDATE())) ASC,
+                bookings.pickup_date DESC,
+                bookings.pickup_time DESC,
+                bookings.id DESC
+            LIMIT ? OFFSET ?
+        ";
+        $bindings[] = $limit;
+        $bindings[] = $offset;
+
+        $bookings = $this->db->query($sql, $bindings)->result_array();
+
+        // enrich_bookings() batches its extra lookups with WHERE IN() on
+        // just these 10 ids, so this stays cheap regardless of table size.
+        return $this->enrich_bookings($bookings);
+    }
+
+    public function get_booking_for_flow($booking_id, $customer_id)
+    {
+        $rows = $this->get_bookings(array(
+            'include_drafts' => true,
+            'bookings.id' => (int) $booking_id,
+            'bookings.customer_id' => (int) $customer_id,
+        ));
+
+        return !empty($rows) ? $rows[0] : array();
+    }
+
+    public function get_available_vehicles()
+    {
+        $vehicles = $this->get_vehicles_with_live_status();
+
+        return array_values(array_filter($vehicles, function ($vehicle) {
+            return isset($vehicle['status']) && $vehicle['status'] === 'available';
+        }));
+    }
+
+    public function get_public_vehicles()
+    {
+        $vehicles = $this->get_vehicles_with_live_status();
+
+        return array_values(array_filter($vehicles, function ($vehicle) {
+            return !isset($vehicle['status']) || $vehicle['status'] !== 'service';
+        }));
+    }
+
+    public function get_vehicles_with_live_status()
+    {
+        $vehicles = $this->get_all('vehicles', array(), 'id DESC');
+
+        return $this->apply_live_vehicle_status($vehicles);
+    }
+
+    public function create_booking($data)
+    {
+        $skip_vehicle_booking = !empty($data['_skip_vehicle_booking']);
+        unset($data['_skip_vehicle_booking']);
+
+        $data['created_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = date('Y-m-d H:i:s');
+
+        $booking_id = $this->insert('bookings', $data);
+
+        return $booking_id;
+    }
+
+    public function find_vehicle_booking_conflict($vehicle_id, $pickup_date, $return_date, $exclude_booking_id = 0, $pickup_time = null, $return_time = null)
+    {
+        $vehicle_id = (int) $vehicle_id;
+        $exclude_booking_id = (int) $exclude_booking_id;
+        $pickup_date = trim((string) $pickup_date);
+        $return_date = trim((string) $return_date);
+        $pickup_time = $this->normalize_time_value($pickup_time);
+        $return_time = $this->normalize_time_value($return_time);
+
+        if ($vehicle_id <= 0 || $pickup_date === '' || $return_date === '') {
+            return array();
+        }
+
+        $this->db->from('bookings');
+        $this->db->where('vehicle_id', $vehicle_id);
+        $this->db->where_in('status', array('pending', 'confirmed', 'completed'));
+        $this->db->where('pickup_date <=', $return_date);
+        $this->db->where('return_date >=', $pickup_date);
+
+        if ($exclude_booking_id > 0) {
+            $this->db->where('id !=', $exclude_booking_id);
+        }
+
+        $candidates = $this->db
+            ->order_by('pickup_date', 'ASC')
+            ->order_by('pickup_time', 'ASC')
+            ->order_by('id', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (empty($candidates)) {
+            return array();
+        }
+
+        foreach ($candidates as $candidate) {
+            if ($this->booking_ranges_overlap(
+                $pickup_date,
+                $return_date,
+                $pickup_time,
+                $return_time,
+                isset($candidate['pickup_date']) ? $candidate['pickup_date'] : '',
+                isset($candidate['return_date']) ? $candidate['return_date'] : '',
+                isset($candidate['pickup_time']) ? $candidate['pickup_time'] : null,
+                isset($candidate['return_time']) ? $candidate['return_time'] : null
+            )) {
+                return $candidate;
+            }
+        }
+
+        return array();
+    }
+
+    public function calculate_booking_amount($vehicle, $booking_type = 'hours', $estimated_km = 0, $hours_slot = 0, $pickup_date = '', $return_date = '', $pickup_time = '', $return_time = '')
+    {
+        if (empty($vehicle)) {
+            return 0;
+        }
+
+        $booking_type = $booking_type === 'km' ? 'km' : 'hours';
+        $estimated_km = max(0, (int) $estimated_km);
+        $hours_slot = (int) $hours_slot;
+
+        if ($booking_type === 'km') {
+            return (float) $vehicle['rate_per_day'] * $estimated_km;
+        }
+
+        $package_price = 0;
+        if ($hours_slot === 6) {
+            $package_price = (float) (isset($vehicle['price_6_hours']) ? $vehicle['price_6_hours'] : 0);
+        }
+
+        if ($hours_slot === 12) {
+            $package_price = (float) (isset($vehicle['price_12_hours']) ? $vehicle['price_12_hours'] : 0);
+        }
+
+        if ($hours_slot === 24) {
+            $package_price = (float) (isset($vehicle['price_24_hours']) ? $vehicle['price_24_hours'] : 0);
+        }
+
+        if ($package_price <= 0 || $hours_slot <= 0) {
+            return 0;
+        }
+
+        $duration_hours = $this->calculate_booking_duration_hours($pickup_date, $return_date, $pickup_time, $return_time);
+        $package_count = $duration_hours > 0 ? (int) ceil($duration_hours / $hours_slot) : 1;
+
+        return $package_price * max(1, $package_count);
+    }
+
+    public function calculate_booking_duration_hours($pickup_date = '', $return_date = '', $pickup_time = '', $return_time = '')
+    {
+        $pickup_date = trim((string) $pickup_date);
+        $return_date = trim((string) $return_date);
+        $pickup_time = trim((string) $pickup_time);
+        $return_time = trim((string) $return_time);
+
+        if ($pickup_date === '' || $return_date === '') {
+            return 0;
+        }
+
+        if ($pickup_time === '') {
+            $pickup_time = '00:00';
+        }
+
+        if ($return_time === '') {
+            $return_time = '00:00';
+        }
+
+        $pickup_stamp = strtotime($pickup_date . ' ' . $pickup_time);
+        $return_stamp = strtotime($return_date . ' ' . $return_time);
+
+        if ($pickup_stamp === false || $return_stamp === false || $return_stamp <= $pickup_stamp) {
+            return 0;
+        }
+
+        return ($return_stamp - $pickup_stamp) / 3600;
+    }
+
+    public function normalize_time_value($time = '')
+    {
+        $time = trim((string) $time);
+        if ($time === '') {
+            return null;
+        }
+
+        $stamp = strtotime($time);
+        if ($stamp === false) {
+            return null;
+        }
+
+        return date('H:i:s', $stamp);
+    }
+
+    public function normalize_indian_phone($phone = '')
+    {
+        $phone = trim((string) $phone);
+        if ($phone === '') {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone);
+        if ($digits === '') {
+            return '';
+        }
+
+        if (strlen($digits) === 12 && substr($digits, 0, 2) === '91') {
+            $candidate = substr($digits, 2);
+            if (preg_match('/^[6-9]\d{9}$/', $candidate)) {
+                return $candidate;
+            }
+        }
+
+        if (strlen($digits) === 11 && substr($digits, 0, 1) === '0') {
+            $candidate = substr($digits, 1);
+            if (preg_match('/^[6-9]\d{9}$/', $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return $digits;
+    }
+
+    public function is_valid_indian_phone($phone = '')
+    {
+        $phone = $this->normalize_indian_phone($phone);
+        return (bool) preg_match('/^[6-9]\d{9}$/', $phone);
+    }
+
+    public function format_booking_datetime_label($date = '', $time = null, $fallback_end_of_day = false)
+    {
+        $stamp = $this->compose_booking_timestamp($date, $time, $fallback_end_of_day);
+        if ($stamp === false) {
+            return '';
+        }
+
+        return date('d M Y h:i A', $stamp);
+    }
+
+    public function purge_draft_booking($booking_id, $customer_id)
+    {
+        $booking_id = (int) $booking_id;
+        $customer_id = (int) $customer_id;
+
+        if ($booking_id <= 0 || $customer_id <= 0) {
+            return false;
+        }
+
+        $booking = $this->get_row('bookings', array(
+            'id' => $booking_id,
+            'customer_id' => $customer_id,
+            'status' => 'draft',
+        ));
+        if (empty($booking)) {
+            return false;
+        }
+
+        if ($this->db->table_exists('payment_requests')) {
+            $requests = $this->db
+                ->where('booking_id', $booking_id)
+                ->where('customer_id', $customer_id)
+                ->get('payment_requests')
+                ->result_array();
+
+            foreach ($requests as $request) {
+                if (!empty($request['receipt_path'])) {
+                    $absolute_path = FCPATH . ltrim(str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $request['receipt_path']), DIRECTORY_SEPARATOR);
+                    if (is_file($absolute_path)) {
+                        @unlink($absolute_path);
+                    }
+                }
+            }
+
+            $this->delete('payment_requests', array('booking_id' => $booking_id, 'customer_id' => $customer_id));
+        }
+
+        $this->update('documents', array('booking_id' => $booking_id, 'customer_id' => $customer_id), array(
+            'booking_id' => null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ));
+
+        if ($this->db->table_exists('payments')) {
+            $this->delete('payments', array('booking_id' => $booking_id));
+        }
+
+        $deleted = $this->delete('bookings', array('id' => $booking_id, 'customer_id' => $customer_id, 'status' => 'draft'));
+        if ($deleted) {
+            $this->purge_temporary_customer_if_unused($customer_id);
+        }
+
+        return $deleted;
+    }
+
+    public function sync_booking_status_from_payment($booking_id)
+    {
+        $booking_id = (int) $booking_id;
+        if ($booking_id <= 0) {
+            return false;
+        }
+
+        $booking = $this->get_row('bookings', array('id' => $booking_id));
+        if (empty($booking)) {
+            return false;
+        }
+
+        if (isset($booking['status']) && $booking['status'] === 'completed') {
+            return true;
+        }
+
+        $paid_amount = 0;
+        if ($this->db->table_exists('payments')) {
+            $paid_amount = (float) $this->db
+                ->select_sum('amount')
+                ->where('booking_id', $booking_id)
+                ->get('payments')
+                ->row()
+                ->amount;
+        }
+
+        $update = array(
+            'updated_at' => date('Y-m-d H:i:s'),
+        );
+
+        if ($paid_amount >= (float) $booking['amount'] && (float) $booking['amount'] > 0) {
+            $update['status'] = 'completed';
+            $result = $this->update('bookings', array('id' => $booking_id), $update);
+
+            if (!empty($booking['vehicle_id'])) {
+                $this->update('vehicles', array('id' => (int) $booking['vehicle_id']), array('status' => 'available'));
+            }
+
+            return $result;
+        }
+
+        if ($paid_amount > 0 && (!isset($booking['status']) || $booking['status'] === 'pending')) {
+            $update['status'] = 'confirmed';
+            return $this->update('bookings', array('id' => $booking_id), array(
+                'status' => 'confirmed',
+                'updated_at' => $update['updated_at'],
+            ));
+        }
+
+        return true;
+    }
+
+    public function format_booking_code($booking_id, $created_at = '')
+    {
+        // If table is empty or truncated, next insert will be id=1
+        // so booking code resets automatically with the id
+        $booking_id = (int) $booking_id;
+        $stamp      = !empty($created_at) ? strtotime($created_at) : false;
+
+        if ($stamp === false) {
+            $stamp = time();
+        }
+
+        return 'BK-' . date('dmy', $stamp) . '-' . str_pad((string) $booking_id, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function get_customers_overview()
+    {
+        $this->db->select("
+            users.id,
+            users.full_name,
+            users.email,
+            users.phone,
+            COUNT(bookings.id) AS total_bookings,
+            COALESCE(SUM(bookings.amount), 0) AS total_spent,
+            MAX(bookings.pickup_date) AS last_booking
+        ", false);
+        $this->db->from('users');
+        $this->db->join('bookings', 'bookings.customer_id = users.id', 'left');
+        $this->db->where('users.role', 0);
+        $this->db->group_by(array('users.id', 'users.full_name', 'users.email', 'users.phone'));
+        $this->db->order_by('users.id', 'DESC');
+
+        $customers = $this->db->get()->result_array();
+
+        foreach ($customers as &$customer) {
+            $document_gate = $this->get_required_documents_status((int) $customer['id']);
+            $customer['doc_status'] = $document_gate['overall_status'];
+            $customer['doc_ready'] = $document_gate['is_ready'] ? 1 : 0;
+            $customer['approved_docs'] = $document_gate['approved_count'];
+            $customer['required_docs'] = $document_gate['required_count'];
+        }
+
+        return $customers;
+    }
+
+    /**
+     * Returns customer_id list who have a booking for the given vehicle
+     * whose pickup_date falls in the given month/year, optionally filtered
+     * by payment status for that booking ('received' = something paid,
+     * 'pending' = balance still due).
+     */
+    public function get_customer_ids_for_vehicle_month($vehicle_id, $year, $month, $payment_filter = '')
+    {
+        $bookings = $this->db
+            ->select('id as booking_id, customer_id, amount')
+            ->from('bookings')
+            ->where('vehicle_id', (int) $vehicle_id)
+            ->where('YEAR(pickup_date)', (int) $year)
+            ->where('MONTH(pickup_date)', (int) $month)
+            ->where_in('status', array('pending', 'confirmed', 'completed', 'cancelled'))
+            ->get()
+            ->result_array();
+
+        if (empty($bookings)) {
+            return array();
+        }
+
+        $booking_ids = array();
+        foreach ($bookings as $b) {
+            $booking_ids[] = (int) $b['booking_id'];
+        }
+
+        $paid_map = $this->get_payment_totals_map($booking_ids);
+        $customer_ids = array();
+
+        foreach ($bookings as $booking) {
+            $paid = isset($paid_map[(int) $booking['booking_id']]) ? (float) $paid_map[(int) $booking['booking_id']] : 0.0;
+            $balance = max(0, (float) $booking['amount'] - $paid);
+
+            if ($payment_filter === 'received' && $paid <= 0) {
+                continue;
+            }
+            if ($payment_filter === 'pending' && $balance <= 0.01) {
+                continue;
+            }
+
+            $customer_ids[] = (int) $booking['customer_id'];
+        }
+
+        return array_values(array_unique($customer_ids));
+    }
+
+    /**
+     * Returns enriched bookings for a specific customer filtered by vehicle,
+     * year, month, and payment status.
+     */
+    public function get_customer_filtered_bookings($customer_id, $vehicle_id = 0, $year = 0, $month = 0, $payment_filter = '')
+    {
+        $customer_id = (int) $customer_id;
+        $this->db->select('bookings.*, users.full_name AS customer_name, users.phone AS customer_phone, vehicles.name AS vehicle_name, vehicles.registration_no, vehicles.advance_amount, vehicles.image AS vehicle_image');
+        $this->db->from('bookings');
+        $this->db->join('users', 'users.id = bookings.customer_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+        $this->db->where('bookings.customer_id', $customer_id);
+        $this->db->where_in('bookings.status', array('pending', 'confirmed', 'completed', 'cancelled'));
+
+        if ($vehicle_id > 0) {
+            $this->db->where('bookings.vehicle_id', (int) $vehicle_id);
+        }
+        if ($year > 0) {
+            $this->db->where('YEAR(bookings.pickup_date)', (int) $year);
+        }
+        if ($month > 0) {
+            $this->db->where('MONTH(bookings.pickup_date)', (int) $month);
+        }
+
+        $this->db->order_by('bookings.id', 'DESC');
+        $bookings = $this->db->get()->result_array();
+        $bookings = $this->enrich_bookings($bookings);
+
+        if ($payment_filter !== '') {
+            $filtered = array();
+            foreach ($bookings as $b) {
+                $paid = (float) $b['paid_amount'];
+                $balance = (float) $b['balance_amount'];
+                if ($payment_filter === 'received' && $paid <= 0) {
+                    continue;
+                }
+                if ($payment_filter === 'pending' && $balance <= 0.01) {
+                    continue;
+                }
+                $filtered[] = $b;
+            }
+            return $filtered;
+        }
+
+        return $bookings;
+    }
+
+    /**
+     * Count matching customers WITHOUT loading their rows — used to build
+     * pagination info (total pages) cheaply, even with millions of rows.
+     *
+     * @param string     $search        free-text search on name/email/phone
+     * @param array|null $matching_ids  restrict to these customer ids (vehicle/month/payment filter), or null for no restriction
+     */
+    public function count_customers_overview($search = '', $matching_ids = null)
+    {
+        if ($matching_ids !== null) {
+            if (empty($matching_ids)) {
+                return 0;
+            }
+            $this->db->where_in('id', $matching_ids);
+        }
+
+        $this->db->where('role', 0);
+
+        $search = trim((string) $search);
+        if ($search !== '') {
+            $this->db->group_start();
+            $this->db->like('full_name', $search);
+            $this->db->or_like('email', $search);
+            $this->db->or_like('phone', $search);
+            $this->db->group_end();
+        }
+
+        return (int) $this->db->count_all_results('users');
+    }
+
+    /**
+     * Returns ONLY the current page of customers — real SQL LIMIT/OFFSET,
+     * not "load everything then hide with JS". Safe at any table size.
+     */
+    public function get_customers_overview_paginated($limit, $offset, $search = '', $matching_ids = null)
+    {
+        $limit = max(1, (int) $limit);
+        $offset = max(0, (int) $offset);
+
+        if ($matching_ids !== null && empty($matching_ids)) {
+            return array();
+        }
+
+        $this->db->select("
+            users.id,
+            users.full_name,
+            users.email,
+            users.phone,
+            COUNT(bookings.id) AS total_bookings,
+            COALESCE(SUM(bookings.amount), 0) AS total_spent,
+            MAX(bookings.pickup_date) AS last_booking
+        ", false);
+        $this->db->from('users');
+        $this->db->join('bookings', 'bookings.customer_id = users.id', 'left');
+        $this->db->where('users.role', 0);
+
+        if ($matching_ids !== null) {
+            $this->db->where_in('users.id', $matching_ids);
+        }
+
+        $search = trim((string) $search);
+        if ($search !== '') {
+            $this->db->group_start();
+            $this->db->like('users.full_name', $search);
+            $this->db->or_like('users.email', $search);
+            $this->db->or_like('users.phone', $search);
+            $this->db->group_end();
+        }
+
+        $this->db->group_by(array('users.id', 'users.full_name', 'users.email', 'users.phone'));
+        $this->db->order_by('users.id', 'DESC');
+        $this->db->limit($limit, $offset);
+
+        $customers = $this->db->get()->result_array();
+
+        // doc_status is looked up per-row, but now only for the 10 rows on
+        // this page — not for the whole table — so this stays fast.
+        foreach ($customers as &$customer) {
+            $document_gate = $this->get_required_documents_status((int) $customer['id']);
+            $customer['doc_status'] = $document_gate['overall_status'];
+            $customer['doc_ready'] = $document_gate['is_ready'] ? 1 : 0;
+            $customer['approved_docs'] = $document_gate['approved_count'];
+            $customer['required_docs'] = $document_gate['required_count'];
+        }
+        unset($customer);
+
+        return $customers;
+    }
+
+    public function get_payment_summary()
+    {
+        $summary = array(
+            'total_collected' => 0,
+            'advance_received' => 0,
+            'remaining_to_collect' => 0,
+            'refunds_issued' => 0,
+        );
+
+        if ($this->db->table_exists('payments')) {
+            $summary['total_collected'] = (float) $this->db->select_sum('amount')->get('payments')->row()->amount;
+            $summary['advance_received'] = (float) $this->db->select_sum('amount')->where('payment_type', 'advance')->get('payments')->row()->amount;
+            $summary['refunds_issued'] = (float) $this->db->select_sum('amount')->where('payment_type', 'refund')->get('payments')->row()->amount;
+        }
+
+        $booking_total = (float) $this->db->select_sum('amount')->get('bookings')->row()->amount;
+        $summary['remaining_to_collect'] = max(0, $booking_total - $summary['total_collected']);
+
+        return $summary;
+    }
+
+    public function get_booking_payments($booking_id)
+    {
+        if (!$this->db->table_exists('payments')) {
+            return array();
+        }
+
+        return $this->db
+            ->where('booking_id', $booking_id)
+            ->order_by('id', 'ASC')
+            ->get('payments')
+            ->result_array();
+    }
+
+    public function has_required_documents_for_booking($customer_id)
+    {
+        $summary = $this->get_required_documents_status($customer_id);
+        return !empty($summary['is_ready']);
+    }
+
+    public function get_missing_required_documents($customer_id)
+    {
+        $summary = $this->get_required_documents_status($customer_id);
+        return array_values(array_unique(array_merge($summary['missing_documents'], $summary['rejected_documents'])));
+    }
+
+    public function get_payment_settings()
+    {
+        $defaults = array(
+            'id' => 0,
+            'account_holder' => '',
+            'bank_name' => '',
+            'account_number' => '',
+            'ifsc_code' => '',
+            'branch_name' => '',
+            'upi_id' => '',
+            'qr_image' => '',
+            'payment_instructions' => '',
+            'updated_at' => '',
+        );
+
+        if (!$this->db->table_exists('payment_settings')) {
+            return $defaults;
+        }
+
+        $row = $this->db
+            ->order_by('id', 'DESC')
+            ->get('payment_settings')
+            ->row_array();
+
+        return !empty($row) ? array_merge($defaults, $row) : $defaults;
+    }
+
+    public function get_public_contact_details()
+    {
+        $defaults = array(
+            'full_name' => 'Cab Booking Fast',
+            'phone' => '',
+            'email' => '',
+            'address' => '',
+        );
+
+        if (!$this->db->table_exists('users')) {
+            return $defaults;
+        }
+
+        $admin = $this->db
+            ->where(array('role' => 1, 'status' => 1))
+            ->order_by('id', 'ASC')
+            ->get('users')
+            ->row_array();
+
+        if (empty($admin)) {
+            return $defaults;
+        }
+
+        return array(
+            'full_name' => !empty($admin['full_name']) ? $admin['full_name'] : $defaults['full_name'],
+            'phone' => !empty($admin['phone']) ? $admin['phone'] : '',
+            'email' => !empty($admin['email']) ? $admin['email'] : '',
+            'address' => isset($admin['address']) ? trim((string) $admin['address']) : '',
+        );
+    }
+
+    public function save_payment_settings($data)
+    {
+        if (!$this->db->table_exists('payment_settings')) {
+            return false;
+        }
+
+        $existing = $this->db->order_by('id', 'DESC')->get('payment_settings')->row_array();
+        $data['updated_at'] = date('Y-m-d H:i:s');
+
+        if (!empty($existing)) {
+            return $this->update('payment_settings', array('id' => (int) $existing['id']), $data);
+        }
+
+        $data['created_at'] = date('Y-m-d H:i:s');
+        return $this->insert('payment_settings', $data);
+    }
+
+    public function create_payment_request($data)
+    {
+        if (!$this->db->table_exists('payment_requests')) {
+            return 0;
+        }
+
+        $data['created_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        return (int) $this->insert('payment_requests', $data);
+    }
+
+    public function get_customer_payment_requests($customer_id)
+    {
+        if (!$this->db->table_exists('payment_requests')) {
+            return array();
+        }
+
+        $this->db->select('payment_requests.*, bookings.created_at AS booking_created_at, vehicles.name AS vehicle_name, vehicles.registration_no');
+        $this->db->from('payment_requests');
+        $this->db->join('bookings', 'bookings.id = payment_requests.booking_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+        $this->db->where('payment_requests.customer_id', (int) $customer_id);
+        $this->db->order_by('payment_requests.id', 'DESC');
+
+        $rows = $this->db->get()->result_array();
+        foreach ($rows as &$row) {
+            $row['booking_code'] = !empty($row['booking_id']) ? $this->format_booking_code($row['booking_id'], isset($row['booking_created_at']) ? $row['booking_created_at'] : '') : '-';
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function get_admin_payment_requests($status = '')
+    {
+        if (!$this->db->table_exists('payment_requests')) {
+            return array();
+        }
+
+        $this->db->select('payment_requests.*, bookings.created_at AS booking_created_at, bookings.pickup_date, bookings.return_date, bookings.pickup_location, bookings.drop_location, bookings.amount AS booking_amount, vehicles.advance_amount, users.full_name AS customer_name, users.email AS customer_email, users.phone AS customer_phone, vehicles.name AS vehicle_name, vehicles.registration_no, vehicles.image AS vehicle_image');
+        $this->db->from('payment_requests');
+        $this->db->join('bookings', 'bookings.id = payment_requests.booking_id', 'left');
+        $this->db->join('users', 'users.id = payment_requests.customer_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+
+        if ($status !== '') {
+            $this->db->where('payment_requests.status', $status);
+        }
+
+        $this->db->order_by('payment_requests.id', 'DESC');
+        $rows = $this->db->get()->result_array();
+
+        foreach ($rows as &$row) {
+            $row['booking_code'] = !empty($row['booking_id']) ? $this->format_booking_code($row['booking_id'], isset($row['booking_created_at']) ? $row['booking_created_at'] : '') : '-';
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function get_payment_request_by_id($request_id)
+    {
+        if (!$this->db->table_exists('payment_requests')) {
+            return array();
+        }
+
+        $this->db->select('payment_requests.*, bookings.created_at AS booking_created_at, bookings.pickup_date, bookings.return_date, bookings.pickup_location, bookings.drop_location, bookings.amount AS booking_amount, vehicles.advance_amount, users.full_name AS customer_name, users.email AS customer_email, users.phone AS customer_phone, vehicles.name AS vehicle_name, vehicles.registration_no, vehicles.image AS vehicle_image');
+        $this->db->from('payment_requests');
+        $this->db->join('bookings', 'bookings.id = payment_requests.booking_id', 'left');
+        $this->db->join('users', 'users.id = payment_requests.customer_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+        $this->db->where('payment_requests.id', (int) $request_id);
+
+        $row = $this->db->get()->row_array();
+        if (!empty($row)) {
+            $row['booking_code'] = !empty($row['booking_id']) ? $this->format_booking_code($row['booking_id'], isset($row['booking_created_at']) ? $row['booking_created_at'] : '') : '-';
+        }
+
+        return !empty($row) ? $row : array();
+    }
+
+    public function get_payment_request_for_booking($booking_id, $customer_id = 0)
+    {
+        if (!$this->db->table_exists('payment_requests')) {
+            return array();
+        }
+
+        $this->db->from('payment_requests');
+        $this->db->where('booking_id', (int) $booking_id);
+
+        if ($customer_id > 0) {
+            $this->db->where('customer_id', (int) $customer_id);
+        }
+
+        return (array) $this->db->order_by('id', 'DESC')->get()->row_array();
+    }
+
+    public function get_booking_photos($booking_id)
+    {
+        $booking_id = (int) $booking_id;
+        if ($booking_id <= 0 || !$this->db->table_exists('booking_vehicle_photos')) {
+            return array();
+        }
+
+        return $this->db
+            ->select('booking_vehicle_photos.*, users.full_name AS uploaded_by_name')
+            ->from('booking_vehicle_photos')
+            ->join('users', 'users.id = booking_vehicle_photos.uploaded_by', 'left')
+            ->where('booking_vehicle_photos.booking_id', $booking_id)
+            ->order_by('booking_vehicle_photos.id', 'DESC')
+            ->get()
+            ->result_array();
+    }
+
+    public function create_booking_photo($data)
+    {
+        if (!$this->db->table_exists('booking_vehicle_photos')) {
+            return 0;
+        }
+
+        $data['created_at'] = date('Y-m-d H:i:s');
+        $data['updated_at'] = date('Y-m-d H:i:s');
+
+        return (int) $this->insert('booking_vehicle_photos', $data);
+    }
+
+    public function update_payment_request($request_id, $data)
+    {
+        if (!$this->db->table_exists('payment_requests')) {
+            return false;
+        }
+
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        return $this->update('payment_requests', array('id' => (int) $request_id), $data);
+    }
+
+    public function get_payment_request_counts()
+    {
+        $counts = array(
+            'total' => 0,
+            'pending' => 0,
+            'approved' => 0,
+            'rejected' => 0,
+        );
+
+        if (!$this->db->table_exists('payment_requests')) {
+            return $counts;
+        }
+
+        $rows = $this->db
+            ->select('status, COUNT(*) AS total_rows', false)
+            ->from('payment_requests')
+            ->group_by('status')
+            ->get()
+            ->result_array();
+
+        foreach ($rows as $row) {
+            $status = strtolower($row['status']);
+            $counts['total'] += (int) $row['total_rows'];
+            if (isset($counts[$status])) {
+                $counts[$status] = (int) $row['total_rows'];
+            }
+        }
+
+        return $counts;
+    }
+
+    public function get_document_types()
+    {
+        return $this->document_types;
+    }
+
+    public function get_customer_documents_matrix($customer_id)
+    {
+        $rows = $this->db
+            ->select('documents.*, bookings.created_at AS booking_created_at, vehicles.name AS vehicle_name')
+            ->from('documents')
+            ->join('bookings', 'bookings.id = documents.booking_id', 'left')
+            ->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left')
+            ->order_by('updated_at', 'DESC')
+            ->order_by('id', 'DESC')
+            ->where('documents.customer_id', $customer_id)
+            ->get()
+            ->result_array();
+
+        $indexed = array();
+        foreach ($rows as $row) {
+            $indexed[$row['document_type']] = $row;
+        }
+
+        $matrix = array();
+        foreach ($this->document_types as $type) {
+            $row = isset($indexed[$type]) ? $indexed[$type] : array();
+            $matrix[] = array(
+                'document_type' => $type,
+                'status' => !empty($row) ? $row['status'] : 'missing',
+                'file_name' => !empty($row) ? $row['file_name'] : '',
+                'file_path' => !empty($row) ? $row['file_path'] : '',
+                'admin_notes' => !empty($row) ? $row['admin_notes'] : '',
+                'booking_id' => !empty($row) ? $row['booking_id'] : 0,
+                'id' => !empty($row) ? $row['id'] : 0,
+                'vehicle_name' => !empty($row) ? $row['vehicle_name'] : '',
+                'booking_created_at' => !empty($row) ? $row['booking_created_at'] : '',
+                'booking_label' => !empty($row) && !empty($row['booking_id'])
+                    ? $this->format_booking_code($row['booking_id'], isset($row['booking_created_at']) ? $row['booking_created_at'] : '') . (!empty($row['vehicle_name']) ? ' - ' . $row['vehicle_name'] : '')
+                    : 'General',
+                'updated_at' => !empty($row) ? $row['updated_at'] : '',
+            );
+        }
+
+        return $matrix;
+    }
+
+    public function get_customer_documents_progress($customer_id)
+    {
+        $matrix = $this->get_customer_documents_matrix($customer_id);
+        $submitted = 0;
+
+        foreach ($matrix as $item) {
+            if ($item['status'] !== 'missing') {
+                $submitted++;
+            }
+        }
+
+        return array(
+            'submitted' => $submitted,
+            'total' => count($matrix),
+            'percentage' => count($matrix) > 0 ? round(($submitted / count($matrix)) * 100) : 0,
+        );
+    }
+
+    public function get_required_documents_status($customer_id)
+    {
+        $summary = array(
+            'is_ready' => false,
+            'overall_status' => 'missing',
+            'required_count' => count($this->required_booking_documents),
+            'approved_count' => 0,
+            'missing_count' => 0,
+            'pending_count' => 0,
+            'rejected_count' => 0,
+            'missing_documents' => array(),
+            'pending_documents' => array(),
+            'rejected_documents' => array(),
+            'approved_documents' => array(),
+            'status_map' => array(),
+        );
+
+        if (!$this->db->table_exists('documents')) {
+            $summary['missing_count'] = $summary['required_count'];
+            $summary['missing_documents'] = $this->required_booking_documents;
+            return $summary;
+        }
+
+        $rows = $this->db
+            ->select('document_type, status')
+            ->from('documents')
+            ->where('customer_id', (int) $customer_id)
+            ->where_in('document_type', $this->required_booking_documents)
+            ->order_by('updated_at', 'DESC')
+            ->order_by('id', 'DESC')
+            ->get()
+            ->result_array();
+
+        foreach ($rows as $row) {
+            if (!isset($summary['status_map'][$row['document_type']])) {
+                $summary['status_map'][$row['document_type']] = strtolower(trim($row['status']));
+            }
+        }
+
+        foreach ($this->required_booking_documents as $document_type) {
+            $status = isset($summary['status_map'][$document_type]) ? $summary['status_map'][$document_type] : 'missing';
+            $summary['status_map'][$document_type] = $status;
+
+            if ($status === 'approved') {
+                $summary['approved_count']++;
+                $summary['approved_documents'][] = $document_type;
+                continue;
+            }
+
+            if ($status === 'rejected') {
+                $summary['rejected_count']++;
+                $summary['rejected_documents'][] = $document_type;
+                continue;
+            }
+
+            if ($status === 'pending') {
+                $summary['pending_count']++;
+                $summary['pending_documents'][] = $document_type;
+                continue;
+            }
+
+            $summary['missing_count']++;
+            $summary['missing_documents'][] = $document_type;
+        }
+
+        if ($summary['approved_count'] === $summary['required_count']) {
+            $summary['is_ready'] = true;
+            $summary['overall_status'] = 'approved';
+        } elseif ($summary['rejected_count'] > 0) {
+            $summary['overall_status'] = 'rejected';
+        } elseif ($summary['pending_count'] > 0) {
+            $summary['overall_status'] = 'pending';
+        } else {
+            $summary['overall_status'] = 'missing';
+        }
+
+        return $summary;
+    }
+
+    public function get_all_documents_for_admin()
+    {
+        $this->db->select('documents.*, users.full_name, users.email, users.phone, bookings.id AS booking_reference, bookings.created_at AS booking_created_at, vehicles.name AS vehicle_name');
+        $this->db->from('documents');
+        $this->db->join('users', 'users.id = documents.customer_id', 'left');
+        $this->db->join('bookings', 'bookings.id = documents.booking_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+        $this->db->order_by('documents.updated_at', 'DESC');
+        return $this->db->get()->result_array();
+    }
+
+    public function get_admin_document_detail($document_id)
+    {
+        $this->db->select('documents.*, users.full_name, users.email, users.phone, bookings.id AS booking_reference, bookings.created_at AS booking_created_at, vehicles.name AS vehicle_name');
+        $this->db->from('documents');
+        $this->db->join('users', 'users.id = documents.customer_id', 'left');
+        $this->db->join('bookings', 'bookings.id = documents.booking_id', 'left');
+        $this->db->join('vehicles', 'vehicles.id = bookings.vehicle_id', 'left');
+        $this->db->where('documents.id', $document_id);
+        return $this->db->get()->row_array();
+    }
+
+    public function get_customer_activity_detail($customer_id)
+    {
+        $customer_id = (int) $customer_id;
+
+        return array(
+            'documents' => $this->get_customer_documents_matrix($customer_id),
+            'bookings' => $this->get_bookings(array('bookings.customer_id' => $customer_id)),
+            'document_gate' => $this->get_required_documents_status($customer_id),
+        );
+    }
+
+    public function get_document_review_groups()
+    {
+        $customers = $this->get_customers_overview();
+        $groups = array();
+
+        foreach ($customers as $customer) {
+            $documents = $this->get_customer_documents_matrix((int) $customer['id']);
+            $pending_count = 0;
+            $uploaded_count = 0;
+
+            foreach ($documents as $document) {
+                if ($document['status'] !== 'missing') {
+                    $uploaded_count++;
+                }
+
+                if ($document['status'] === 'pending') {
+                    $pending_count++;
+                }
+            }
+
+            if ($uploaded_count === 0) {
+                continue;
+            }
+
+            $groups[] = array(
+                'customer' => $customer,
+                'documents' => $documents,
+                'pending_count' => $pending_count,
+                'uploaded_count' => $uploaded_count,
+                'total_count' => count($documents),
+            );
+        }
+
+        return $groups;
+    }
+
+    public function sync_manual_booking_documents($customer_id, $booking_id, $aadhaar_number = '', $driving_license_number = '', $documents_verified = false)
+    {
+        $customer_id = (int) $customer_id;
+        $booking_id = (int) $booking_id;
+
+        if ($customer_id <= 0) {
+            return false;
+        }
+
+        $this->update_user_profile($customer_id, array(
+            'aadhaar_number' => trim($aadhaar_number),
+            'driving_license_number' => trim($driving_license_number),
+            'documents_verified' => $documents_verified ? 1 : 0,
+        ));
+
+        if (!$documents_verified || !$this->db->table_exists('documents')) {
+            return true;
+        }
+
+        $notes = 'Verified manually by admin during booking.';
+        $now = date('Y-m-d H:i:s');
+        $manual_documents = array(
+            'Aadhaar Card' => trim($aadhaar_number),
+            'Driving License' => trim($driving_license_number),
+        );
+
+        foreach ($manual_documents as $document_type => $document_number) {
+            $payload = array(
+                'customer_id' => $customer_id,
+                'booking_id' => $booking_id > 0 ? $booking_id : null,
+                'document_type' => $document_type,
+                'file_name' => '',
+                'file_path' => '',
+                'status' => 'approved',
+                'admin_notes' => $document_number !== '' ? $notes . ' Number: ' . $document_number : $notes,
+                'updated_at' => $now,
+            );
+
+            $existing = $this->get_row('documents', array(
+                'customer_id' => $customer_id,
+                'document_type' => $document_type,
+            ));
+
+            if (!empty($existing)) {
+                $this->update('documents', array('id' => (int) $existing['id']), $payload);
+                continue;
+            }
+
+            $payload['created_at'] = $now;
+            $this->insert('documents', $payload);
+        }
+
+        return true;
+    }
+
+    private function enrich_bookings($bookings)
+    {
+        if (empty($bookings)) {
+            return array();
+        }
+
+        $booking_ids = array();
+        foreach ($bookings as $booking) {
+            $booking_ids[] = (int) $booking['id'];
+        }
+
+        $payment_totals = $this->get_payment_totals_map($booking_ids);
+        $payment_request_map = $this->get_payment_request_map($booking_ids);
+        $photo_count_map = $this->get_booking_photo_counts_map($booking_ids);
+
+        foreach ($bookings as &$booking) {
+            $paid_amount = isset($payment_totals[$booking['id']]) ? (float) $payment_totals[$booking['id']] : 0;
+            $amount = (float) $booking['amount'];
+            $advance_amount = isset($booking['advance_amount']) ? (float) $booking['advance_amount'] : 0;
+            $balance_amount = max(0, $amount - $paid_amount);
+            $request_row = isset($payment_request_map[$booking['id']]) ? $payment_request_map[$booking['id']] : array();
+
+            $booking['booking_code'] = $this->format_booking_code($booking['id'], isset($booking['created_at']) ? $booking['created_at'] : '');
+            $booking['trip_label'] = $this->format_trip_range($booking['pickup_date'], $booking['return_date']);
+            $booking['trip_route'] = trim($booking['pickup_location'] . ' - ' . $booking['drop_location'], ' -');
+            $booking_type = !empty($booking['booking_type']) ? $booking['booking_type'] : 'km';
+            $booking['display_km'] = !empty($booking['estimated_km']) ? (int) $booking['estimated_km'] . ' km' : 'N/A';
+            $booking['booking_type'] = $booking_type;
+            $booking['trip_mode_label'] = $booking_type === 'hours'
+                ? (!empty($booking['hours_slot']) ? (int) $booking['hours_slot'] . ' Hours' : 'Hours')
+                : $booking['display_km'];
+
+            $booking['paid_amount'] = $paid_amount;
+            $booking['requires_advance'] = isset($booking['requires_advance']) ? (int) $booking['requires_advance'] : 1;
+            $booking['advance_due'] = $booking['requires_advance'] ? $advance_amount : 0;
+            $booking['balance_amount'] = $balance_amount;
+            $booking['effective_status'] = $booking['status'];
+            if ($booking['effective_status'] === 'pending' && $paid_amount > 0) {
+                $booking['effective_status'] = 'confirmed';
+            }
+            $booking['payment_status'] = $booking['requires_advance']
+                ? $this->resolve_payment_status($paid_amount, $advance_amount, $amount)
+                : 'Not Required';
+            $booking['payment_badge'] = strtolower(str_replace(' ', '-', $booking['payment_status']));
+            $booking['payment_request_id'] = !empty($request_row) ? (int) $request_row['id'] : 0;
+            $booking['payment_request_status'] = !empty($request_row) ? $request_row['status'] : '';
+            $booking['payment_request_type'] = !empty($request_row) ? $request_row['payment_type'] : '';
+            $booking['payment_request_receipt'] = !empty($request_row) ? $request_row['receipt_path'] : '';
+            $booking['payment_request_admin_notes'] = !empty($request_row) ? $request_row['admin_notes'] : '';
+            $booking['booking_photo_count'] = isset($photo_count_map[$booking['id']]) ? (int) $photo_count_map[$booking['id']] : 0;
+        }
+        unset($booking);
+
+        return $bookings;
+    }
+
+    private function ensure_users_profile_columns()
+    {
+        if (!$this->db->table_exists('users')) {
+            return;
+        }
+
+        if (!$this->db->field_exists('profile_image', 'users')) {
+            $this->db->query("ALTER TABLE `users` ADD COLUMN `profile_image` VARCHAR(255) DEFAULT NULL AFTER `phone`");
+        }
+    }
+
+    private function ensure_users_booking_columns()
+    {
+        if (!$this->db->table_exists('users')) {
+            return;
+        }
+
+        if (!$this->db->field_exists('aadhaar_number', 'users')) {
+            $this->db->query("ALTER TABLE `users` ADD COLUMN `aadhaar_number` VARCHAR(80) DEFAULT NULL AFTER `profile_image`");
+        }
+
+        if (!$this->db->field_exists('driving_license_number', 'users')) {
+            $this->db->query("ALTER TABLE `users` ADD COLUMN `driving_license_number` VARCHAR(80) DEFAULT NULL AFTER `aadhaar_number`");
+        }
+
+        if (!$this->db->field_exists('documents_verified', 'users')) {
+            $this->db->query("ALTER TABLE `users` ADD COLUMN `documents_verified` TINYINT(1) NOT NULL DEFAULT 0 AFTER `driving_license_number`");
+        }
+
+        if (!$this->db->field_exists('address', 'users')) {
+            $this->db->query("ALTER TABLE `users` ADD COLUMN `address` TEXT DEFAULT NULL AFTER `documents_verified`");
+        }
+    }
+
+    private function ensure_vehicle_pricing_columns()
+    {
+        if (!$this->db->table_exists('vehicles')) {
+            return;
+        }
+
+        if (!$this->db->field_exists('rate_per_day', 'vehicles')) {
+            $this->db->query("ALTER TABLE `vehicles` ADD COLUMN `rate_per_day` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `seats`");
+        }
+
+        if (!$this->db->field_exists('price_6_hours', 'vehicles')) {
+            $this->db->query("ALTER TABLE `vehicles` ADD COLUMN `price_6_hours` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `rate_per_day`");
+        }
+
+        if (!$this->db->field_exists('price_12_hours', 'vehicles')) {
+            $this->db->query("ALTER TABLE `vehicles` ADD COLUMN `price_12_hours` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `price_6_hours`");
+        }
+
+        if (!$this->db->field_exists('price_24_hours', 'vehicles')) {
+            $this->db->query("ALTER TABLE `vehicles` ADD COLUMN `price_24_hours` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `price_12_hours`");
+        }
+
+        if (!$this->db->field_exists('extra_hour_charge', 'vehicles')) {
+            $this->db->query("ALTER TABLE `vehicles` ADD COLUMN `extra_hour_charge` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `price_24_hours`");
+        }
+    }
+
+    private function ensure_booking_pricing_columns()
+    {
+        if (!$this->db->table_exists('bookings')) {
+            return;
+        }
+
+        if (!$this->db->field_exists('estimated_km', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `estimated_km` INT NOT NULL DEFAULT 0 AFTER `drop_location`");
+        }
+
+        if (!$this->db->field_exists('booking_type', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `booking_type` VARCHAR(20) NOT NULL DEFAULT 'km' AFTER `estimated_km`");
+        }
+
+        if (!$this->db->field_exists('pickup_time', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `pickup_time` TIME NULL DEFAULT NULL AFTER `return_date`");
+        }
+
+        if (!$this->db->field_exists('return_time', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `return_time` TIME NULL DEFAULT NULL AFTER `pickup_time`");
+        }
+
+        if (!$this->db->field_exists('hours_slot', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `hours_slot` INT NOT NULL DEFAULT 0 AFTER `booking_type`");
+        }
+
+        if (!$this->db->field_exists('requires_advance', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `requires_advance` TINYINT(1) NOT NULL DEFAULT 1 AFTER `hours_slot`");
+        }
+
+        if (!$this->db->field_exists('driver_number', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `driver_number` VARCHAR(20) NULL DEFAULT NULL AFTER `drop_location`");
+        }
+
+        if (!$this->db->field_exists('other_expenses', 'bookings')) {
+            $this->db->query("ALTER TABLE `bookings` ADD COLUMN `other_expenses` DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER `parking_expense`");
+        }
+    }
+
+    private function ensure_booking_status_values()
+    {
+        if (!$this->db->table_exists('bookings') || !$this->db->field_exists('status', 'bookings')) {
+            return;
+        }
+
+        $status_field = $this->db->query("SHOW COLUMNS FROM `bookings` LIKE 'status'")->row_array();
+        $status_type = !empty($status_field['Type']) ? strtolower((string) $status_field['Type']) : '';
+
+        if (strpos($status_type, "enum('draft'") === false) {
+            $this->db->query("ALTER TABLE `bookings` MODIFY `status` ENUM('draft','pending','confirmed','completed','cancelled') NULL DEFAULT 'pending'");
+        }
+
+        $this->db->query("UPDATE `bookings` SET `status` = 'draft' WHERE `status` IS NULL OR `status` = ''");
+    }
+
+    private function cleanup_orphan_temporary_customers()
+    {
+        if (!$this->db->table_exists('users') || !$this->db->table_exists('bookings')) {
+            return;
+        }
+
+        $rows = $this->db->query("
+            SELECT users.id
+            FROM users
+            LEFT JOIN bookings ON bookings.customer_id = users.id
+            WHERE users.role = 0
+              AND users.email LIKE 'walkin.%@local.customer'
+            GROUP BY users.id
+            HAVING COUNT(bookings.id) = 0
+        ")->result_array();
+
+        foreach ($rows as $row) {
+            $this->purge_temporary_customer_if_unused((int) $row['id']);
+        }
+    }
+
+    private function purge_temporary_customer_if_unused($customer_id)
+    {
+        $customer_id = (int) $customer_id;
+        if ($customer_id <= 0) {
+            return false;
+        }
+
+        $customer = $this->get_row('users', array(
+            'id' => $customer_id,
+            'role' => 0,
+        ));
+        if (empty($customer)) {
+            return false;
+        }
+
+        $remaining_bookings = $this->count_rows('bookings', array('customer_id' => $customer_id));
+        if ($remaining_bookings > 0) {
+            return false;
+        }
+
+        $email = isset($customer['email']) ? (string) $customer['email'] : '';
+        if (!preg_match('/^walkin\..+@local\.customer$/', $email)) {
+            return false;
+        }
+
+        $documents = $this->get_all('documents', array('customer_id' => $customer_id));
+        foreach ($documents as $document) {
+            if (!empty($document['file_path'])) {
+                $absolute_path = FCPATH . ltrim(str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $document['file_path']), DIRECTORY_SEPARATOR);
+                if (is_file($absolute_path)) {
+                    @unlink($absolute_path);
+                }
+            }
+        }
+
+        if ($this->db->table_exists('payment_requests')) {
+            $requests = $this->db
+                ->where('customer_id', $customer_id)
+                ->get('payment_requests')
+                ->result_array();
+
+            foreach ($requests as $request) {
+                if (!empty($request['receipt_path'])) {
+                    $absolute_path = FCPATH . ltrim(str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $request['receipt_path']), DIRECTORY_SEPARATOR);
+                    if (is_file($absolute_path)) {
+                        @unlink($absolute_path);
+                    }
+                }
+            }
+
+            $this->delete('payment_requests', array('customer_id' => $customer_id));
+        }
+
+        return $this->delete('users', array('id' => $customer_id, 'role' => 0));
+    }
+
+    private function build_customer_email($email = '', $phone = '', $exclude_user_id = 0)
+    {
+        $email = trim($email);
+        if ($email !== '') {
+            $this->db->where('email', $email);
+            if ($exclude_user_id > 0) {
+                $this->db->where('id !=', (int) $exclude_user_id);
+            }
+            $existing_email = $this->db->get('users')->row_array();
+            if (empty($existing_email)) {
+                return $email;
+            }
+        }
+
+        $phone_digits = preg_replace('/\D+/', '', $phone);
+        if ($phone_digits === '') {
+            $phone_digits = (string) time();
+        }
+
+        do {
+            $generated_email = 'walkin.' . $phone_digits . '.' . mt_rand(1000, 9999) . '@local.customer';
+            $existing_generated = $this->get_row('users', array('email' => $generated_email));
+        } while (!empty($existing_generated));
+
+        return $generated_email;
+    }
+
+    private function get_payment_totals_map($booking_ids)
+    {
+        if (empty($booking_ids) || !$this->db->table_exists('payments')) {
+            return array();
+        }
+
+        $rows = $this->db
+            ->select('booking_id, SUM(amount) AS total_paid', false)
+            ->from('payments')
+            ->where_in('booking_id', $booking_ids)
+            ->group_by('booking_id')
+            ->get()
+            ->result_array();
+
+        $map = array();
+        foreach ($rows as $row) {
+            $map[(int) $row['booking_id']] = (float) $row['total_paid'];
+        }
+
+        return $map;
+    }
+
+    private function apply_live_vehicle_status($vehicles, $reference_date = '')
+    {
+        if (empty($vehicles)) {
+            return array();
+        }
+
+        $booking_map = $this->get_live_vehicle_booking_map($reference_date);
+
+        foreach ($vehicles as &$vehicle) {
+            $vehicle_id = isset($vehicle['id']) ? (int) $vehicle['id'] : 0;
+            $base_status = isset($vehicle['status']) ? strtolower((string) $vehicle['status']) : 'available';
+
+            if ($base_status === 'service') {
+                $vehicle['active_booking'] = array();
+                $vehicle['status'] = 'service';
+                continue;
+            }
+
+            if ($vehicle_id > 0 && isset($booking_map[$vehicle_id])) {
+                $vehicle['status'] = 'booked';
+                $vehicle['active_booking'] = $booking_map[$vehicle_id];
+                continue;
+            }
+
+            $vehicle['status'] = 'available';
+            $vehicle['active_booking'] = array();
+        }
+        unset($vehicle);
+
+        return $vehicles;
+    }
+
+    private function get_live_vehicle_booking_map($reference_date = '')
+    {
+        $reference_date = trim((string) $reference_date);
+        $reference_stamp = $reference_date !== ''
+            ? strtotime($reference_date . ' ' . date('H:i:s'))
+            : time();
+        $bookings = $this->get_bookings();
+        $map = array();
+
+        foreach ($bookings as $booking) {
+            $vehicle_id = isset($booking['vehicle_id']) ? (int) $booking['vehicle_id'] : 0;
+            if ($vehicle_id <= 0 || isset($map[$vehicle_id])) {
+                continue;
+            }
+
+            $status = !empty($booking['effective_status']) ? $booking['effective_status'] : $booking['status'];
+            if (!in_array($status, array('pending', 'confirmed', 'completed'), true)) {
+                continue;
+            }
+
+            if (!$this->booking_is_active_at_timestamp($booking, $reference_stamp)) {
+                continue;
+            }
+
+            $map[$vehicle_id] = $booking;
+        }
+
+        return $map;
+    }
+
+    private function get_payment_request_map($booking_ids)
+    {
+        if (empty($booking_ids) || !$this->db->table_exists('payment_requests')) {
+            return array();
+        }
+
+        $rows = $this->db
+            ->from('payment_requests')
+            ->where_in('booking_id', $booking_ids)
+            ->order_by('id', 'DESC')
+            ->get()
+            ->result_array();
+
+        $map = array();
+        foreach ($rows as $row) {
+            $booking_id = (int) $row['booking_id'];
+            if (!isset($map[$booking_id])) {
+                $map[$booking_id] = $row;
+            }
+        }
+
+        return $map;
+    }
+
+    private function get_booking_photo_counts_map($booking_ids)
+    {
+        if (empty($booking_ids) || !$this->db->table_exists('booking_vehicle_photos')) {
+            return array();
+        }
+
+        $rows = $this->db
+            ->select('booking_id, COUNT(*) AS total_photos', false)
+            ->from('booking_vehicle_photos')
+            ->where_in('booking_id', $booking_ids)
+            ->group_by('booking_id')
+            ->get()
+            ->result_array();
+
+        $map = array();
+        foreach ($rows as $row) {
+            $map[(int) $row['booking_id']] = (int) $row['total_photos'];
+        }
+
+        return $map;
+    }
+
+    private function format_trip_range($pickup_date, $return_date)
+    {
+        $pickup_stamp = !empty($pickup_date) ? strtotime($pickup_date) : false;
+        $return_stamp = !empty($return_date) ? strtotime($return_date) : false;
+
+        if ($pickup_stamp === false && $return_stamp === false) {
+            return 'Dates pending';
+        }
+
+        if ($pickup_stamp !== false && $return_stamp !== false) {
+            return date('d M Y', $pickup_stamp) . ' - ' . date('d M Y', $return_stamp);
+        }
+
+        return $pickup_stamp !== false ? date('d M Y', $pickup_stamp) : date('d M Y', $return_stamp);
+    }
+
+    private function booking_ranges_overlap($first_pickup_date, $first_return_date, $first_pickup_time = null, $first_return_time = null, $second_pickup_date = '', $second_return_date = '', $second_pickup_time = null, $second_return_time = null)
+    {
+        $first_start = $this->compose_booking_timestamp($first_pickup_date, $first_pickup_time, false);
+        $first_end = $this->compose_booking_timestamp($first_return_date, $first_return_time, true);
+        $second_start = $this->compose_booking_timestamp($second_pickup_date, $second_pickup_time, false);
+        $second_end = $this->compose_booking_timestamp($second_return_date, $second_return_time, true);
+
+        if ($first_start === false || $first_end === false || $second_start === false || $second_end === false) {
+            return false;
+        }
+
+        return $first_start < $second_end && $first_end > $second_start;
+    }
+
+    private function booking_is_active_at_timestamp($booking, $reference_stamp)
+    {
+        $reference_stamp = (int) $reference_stamp;
+        if ($reference_stamp <= 0) {
+            return false;
+        }
+
+        $pickup_date = isset($booking['pickup_date']) ? $booking['pickup_date'] : '';
+        $return_date = isset($booking['return_date']) ? $booking['return_date'] : '';
+        $pickup_time = isset($booking['pickup_time']) ? $booking['pickup_time'] : null;
+        $return_time = isset($booking['return_time']) ? $booking['return_time'] : null;
+
+        $start_stamp = $this->compose_booking_timestamp($pickup_date, $pickup_time, false);
+        $end_stamp = $this->compose_booking_timestamp($return_date, $return_time, true);
+
+        if ($start_stamp === false || $end_stamp === false) {
+            return false;
+        }
+
+        return $start_stamp <= $reference_stamp && $end_stamp > $reference_stamp;
+    }
+
+    private function compose_booking_timestamp($date = '', $time = null, $fallback_end_of_day = false)
+    {
+        $date = trim((string) $date);
+        if ($date === '') {
+            return false;
+        }
+
+        $normalized_time = $this->normalize_time_value($time);
+        if ($normalized_time === null) {
+            $normalized_time = $fallback_end_of_day ? '23:59:59' : '00:00:00';
+        }
+
+        return strtotime($date . ' ' . $normalized_time);
+    }
+
+    private function resolve_payment_status($paid_amount, $advance_amount, $amount)
+    {
+        if ($amount > 0 && $paid_amount >= $amount) {
+            return 'Paid';
+        }
+
+        if ($advance_amount > 0 && $paid_amount >= $advance_amount) {
+            return 'Advance Received';
+        }
+
+        if ($paid_amount > 0) {
+            return 'Part Paid';
+        }
+
+        return 'Pending';
+    }
+
+    public function get_vehicles_for_edit()
+    {
+        $this->db->select('
+        vehicles.id,
+        vehicles.name,
+        vehicles.registration_no,
+        vehicles.rate_per_day,
+        vehicles.advance_amount,
+        vehicles.price_6_hours,
+        vehicles.price_12_hours,
+        vehicles.price_24_hours,
+        vehicles.extra_hour_charge,
+        vehicles.status
+    ');
+        $this->db->from('vehicles');
+        $this->db->order_by('vehicles.name', 'ASC');
+
+        $query = $this->db->get();
+
+        return $query->num_rows() > 0 ? $query->result_array() : array();
+    }
+
+    public function get_customer_payment_summary($customer_id)
+    {
+        $customer_id = (int) $customer_id;
+
+        // Get all bookings for customer
+        $bookings = $this->db->where('customer_id', $customer_id)
+            ->get('bookings')
+            ->result_array();
+
+        $total_amount = 0;
+        $paid_amount = 0;
+
+        foreach ($bookings as $booking) {
+            $total_amount += (float) $booking['amount'];
+
+            // Get payments for this booking
+            $payments = $this->db->where('booking_id', $booking['id'])
+                ->get('payments')
+                ->result_array();
+
+            foreach ($payments as $payment) {
+                $paid_amount += (float) $payment['amount'];
+            }
+        }
+
+        $pending_amount = max(0, $total_amount - $paid_amount);
+
+        return array(
+            'total_amount' => $total_amount,
+            'paid_amount' => $paid_amount,
+            'pending_amount' => $pending_amount
+        );
+    }
+    public function get_vehicle_collection_summary($vehicle_id, $year = null, $month = null)
+    {
+        $vehicle_id = (int) $vehicle_id;
+
+        if ($vehicle_id <= 0) {
+            return array(
+                'total_amount' => 0,
+                'received_amount' => 0,
+                'pending_amount' => 0,
+                'total_bookings' => 0
+            );
+        }
+
+        // Use current month/year if not provided
+        if ($year === null) {
+            $year = (int) date('Y');
+        }
+        if ($month === null) {
+            $month = (int) date('m');
+        }
+
+        $year = (int) $year;
+        $month = (int) $month;
+
+        // Get bookings from selected month only (by pickup_date)
+        $this->db->select('id, amount');
+        $this->db->from('bookings');
+        $this->db->where('vehicle_id', $vehicle_id);
+        $this->db->where('YEAR(pickup_date)', $year);
+        $this->db->where('MONTH(pickup_date)', $month);
+        $bookings_query = $this->db->get();
+        $bookings = $bookings_query->result_array();
+
+        $total_amount = 0;
+        $booking_ids = array();
+
+        foreach ($bookings as $booking) {
+            $total_amount += (float) $booking['amount'];
+            $booking_ids[] = (int) $booking['id'];
+        }
+
+        $total_bookings = count($bookings);
+
+        // Get payments for these month's bookings
+        $received_amount = 0;
+
+        if (!empty($booking_ids)) {
+            $this->db->select('COALESCE(SUM(amount), 0) as total_received');
+            $this->db->from('payments');
+            $this->db->where_in('booking_id', $booking_ids);
+
+            $payments_query = $this->db->get();
+
+            if ($payments_query->num_rows() > 0) {
+                $received_amount = (float) $payments_query->row()->total_received;
+            }
+        }
+
+        $pending_amount = max(0, $total_amount - $received_amount);
+
+        return array(
+            'total_amount' => $total_amount,
+            'received_amount' => $received_amount,
+            'pending_amount' => $pending_amount,
+            'total_bookings' => $total_bookings
+        );
+    }
+
+    public function get_vehicle_expenses($vehicle_id, $year = null, $month = null)
+    {
+        $vehicle_id = (int) $vehicle_id;
+        if ($vehicle_id <= 0 || !$this->db->table_exists('vehicle_expenses')) {
+            return array();
+        }
+
+        $this->db->where('vehicle_id', $vehicle_id);
+        if ($year !== null) {
+            $this->db->where('YEAR(expense_date)', (int) $year);
+        }
+        if ($month !== null) {
+            $this->db->where('MONTH(expense_date)', (int) $month);
+        }
+
+        return $this->db->order_by('expense_date', 'DESC')->order_by('id', 'DESC')->get('vehicle_expenses')->result_array();
+    }
+
+    public function add_vehicle_expense($vehicle_id, $expense_name, $amount, $expense_date = '', $notes = '')
+    {
+        if (!$this->db->table_exists('vehicle_expenses')) {
+            return 0;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        return (int) $this->insert('vehicle_expenses', array(
+            'vehicle_id'   => (int) $vehicle_id,
+            'expense_name' => trim($expense_name),
+            'amount'       => (float) $amount,
+            'expense_date' => $expense_date !== '' ? $expense_date : date('Y-m-d'),
+            'notes'        => trim($notes),
+            'created_at'   => $now,
+            'updated_at'   => $now,
+        ));
+    }
+
+    public function delete_vehicle_expense($expense_id, $vehicle_id)
+    {
+        if (!$this->db->table_exists('vehicle_expenses')) {
+            return false;
+        }
+        return $this->delete('vehicle_expenses', array('id' => (int) $expense_id, 'vehicle_id' => (int) $vehicle_id));
+    }
+
+    public function get_vehicle_expense_summary($vehicle_id, $year = null, $month = null)
+    {
+        $expenses = $this->get_vehicle_expenses($vehicle_id, $year, $month);
+        $total = 0;
+        foreach ($expenses as $expense) {
+            $total += (float) $expense['amount'];
+        }
+        return array(
+            'expenses'    => $expenses,
+            'total'       => $total,
+            'count'       => count($expenses),
+        );
+    }
+}

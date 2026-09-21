@@ -1,0 +1,2847 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+    :root {
+        --brand: #2563eb;
+        --brand-hover: #1d4ed8;
+        --brand-light: #eff6ff;
+        --brand-mid: #dbeafe;
+        --surface: #ffffff;
+        --surface-alt: #f8fafc;
+        --border: #e2e8f0;
+        --border-soft: #f1f5f9;
+        --text-1: #0f172a;
+        --text-2: #475569;
+        --text-3: #94a3b8;
+        --success-bg: #f0fdf4;
+        --success-bd: #bbf7d0;
+        --success-tx: #15803d;
+        --danger-bg: #fff1f2;
+        --danger-bd: #fecdd3;
+        --danger-tx: #be123c;
+        --warning-bg: #fffbeb;
+        --warning-bd: #fde68a;
+        --warning-tx: #b45309;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
+        --shadow-xs: 0 1px 3px rgba(15, 23, 42, .06);
+        --shadow-sm: 0 4px 16px rgba(15, 23, 42, .08);
+        --shadow-md: 0 8px 32px rgba(15, 23, 42, .12);
+        --shadow-modal: 0 24px 64px rgba(15, 23, 42, .18);
+        --font: 'DM Sans', system-ui, sans-serif;
+        --font-mono: 'DM Mono', monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    .vm-wrap {
+        font-family: var(--font);
+        color: var(--text-1);
+    }
+
+    /* ── Stats grid ── */
+    .vm-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 28px;
+    }
+
+    .vm-stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px 24px;
+        box-shadow: var(--shadow-xs);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vm-stat::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+
+    .vm-stat.blue::after {
+        background: #2563eb;
+    }
+
+    .vm-stat.green::after {
+        background: #22c55e;
+    }
+
+    .vm-stat.amber::after {
+        background: #f59e0b;
+    }
+
+    .vm-stat-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        color: var(--text-3);
+        margin-bottom: 10px;
+    }
+
+    .vm-stat-value {
+        font-size: 34px;
+        font-weight: 600;
+        color: var(--text-1);
+        line-height: 1;
+        margin-bottom: 6px;
+        letter-spacing: -1px;
+    }
+
+    .vm-stat-desc {
+        font-size: 13px;
+        color: var(--text-2);
+    }
+
+    /* ── Section card ── */
+    .vm-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xs);
+        overflow: hidden;
+    }
+
+    .vm-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 24px 28px;
+        border-bottom: 1px solid var(--border-soft);
+        flex-wrap: wrap;
+    }
+
+    .vm-card-head h3 {
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--text-1);
+        margin-bottom: 3px;
+    }
+
+    .vm-card-head p {
+        font-size: 13.5px;
+        color: var(--text-2);
+        line-height: 1.5;
+    }
+
+    /* ── Add button ── */
+    .vm-add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: var(--brand);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font: 600 13.5px/1 var(--font);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, .3);
+    }
+
+    .vm-add-btn:hover {
+        background: var(--brand-hover);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, .4);
+    }
+
+    .vm-add-btn:active {
+        transform: scale(.98);
+    }
+
+    .vm-add-btn svg {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+    }
+
+    /* ── Table ── */
+    .vm-table-wrap {
+        overflow-x: auto;
+    }
+
+    .vm-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 960px;
+        font-size: 13.5px;
+    }
+
+    .vm-table thead {
+        background: var(--surface-alt);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .vm-table th {
+        padding: 13px 18px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .6px;
+        text-transform: uppercase;
+        color: var(--text-3);
+        white-space: nowrap;
+    }
+
+    .vm-table td {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-soft);
+        color: var(--text-1);
+        vertical-align: middle;
+    }
+
+    .vm-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .vm-table tbody tr {
+        transition: background .1s ease;
+    }
+
+    .vm-table tbody tr:hover {
+        background: #fafbfc;
+    }
+
+    /* ── Vehicle info cell ── */
+    .vm-vehicle-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .vm-thumb {
+        width: 72px;
+        height: 52px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: var(--surface-alt);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .vm-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .vm-thumb-empty {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--text-3);
+        text-align: center;
+        padding: 4px;
+    }
+
+    .vm-vehicle-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
+        margin-bottom: 2px;
+    }
+
+    .vm-vehicle-reg {
+        font-size: 12px;
+        color: var(--text-3);
+        font-family: var(--font-mono);
+    }
+
+    .vm-row-num {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-3);
+        font-family: var(--font-mono);
+    }
+
+    .vm-mono {
+        font-family: var(--font-mono);
+        font-size: 13px;
+    }
+
+    /* ── Badges ── */
+    .vm-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .vm-badge::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .vm-badge.available {
+        background: var(--success-bg);
+        border-color: var(--success-bd);
+        color: var(--success-tx);
+    }
+
+    .vm-badge.available::before {
+        background: #22c55e;
+    }
+
+    .vm-badge.booked {
+        background: var(--danger-bg);
+        border-color: var(--danger-bd);
+        color: var(--danger-tx);
+    }
+
+    .vm-badge.booked::before {
+        background: #ef4444;
+    }
+
+    .vm-badge.service {
+        background: var(--warning-bg);
+        border-color: var(--warning-bd);
+        color: var(--warning-tx);
+    }
+
+    .vm-badge.service::before {
+        background: #f59e0b;
+    }
+
+    /* ── Table action buttons ── */
+    .vm-actions {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+
+    .vm-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 13px;
+        border-radius: var(--radius-sm);
+        font: 600 12px/1 var(--font);
+        border: 1.5px solid;
+        cursor: pointer;
+        transition: background .12s ease, transform .1s ease;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .vm-btn svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+    }
+
+    .vm-btn:active {
+        transform: scale(.97);
+    }
+
+    .vm-btn.edit {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+
+    .vm-btn.edit:hover {
+        background: #dbeafe;
+    }
+
+    .vm-btn.view {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #334155;
+    }
+
+    .vm-btn.view:hover {
+        background: #eef2f7;
+    }
+
+    .vm-btn.delete {
+        background: var(--danger-bg);
+        border-color: var(--danger-bd);
+        color: var(--danger-tx);
+    }
+
+    .vm-btn.delete:hover {
+        background: #ffe4e6;
+    }
+
+    .vm-actions form {
+        display: contents;
+    }
+
+    .vm-booking-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    .vm-booking-hero {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 24px 24px 20px;
+        border-bottom: 1px solid var(--border-soft);
+        background: radial-gradient(circle at top right, rgba(37, 99, 235, .10), transparent 34%), linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .vm-booking-kicker {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--brand);
+        margin-bottom: 10px;
+    }
+
+    .vm-booking-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-1);
+        margin-bottom: 4px;
+        line-height: 1.15;
+    }
+
+    .vm-booking-sub {
+        font-size: 13.5px;
+        color: var(--text-2);
+        line-height: 1.6;
+    }
+
+    .vm-booking-status {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        background: var(--brand-light);
+        border: 1px solid var(--brand-mid);
+        color: var(--brand-hover);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .vm-booking-status::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .vm-booking-grid {
+        display: grid;
+        grid-template-columns: 1.15fr .85fr;
+        gap: 18px;
+        padding: 22px 24px 24px;
+    }
+
+    .vm-booking-panel {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: #fff;
+        padding: 18px;
+    }
+
+    .vm-panel-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text-3);
+        margin-bottom: 14px;
+    }
+
+    .vm-panel-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .vm-panel-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 16px;
+        background: var(--brand-light);
+        border: 1px solid var(--brand-mid);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--brand-hover);
+        font-size: 18px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .vm-panel-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-1);
+        margin-bottom: 3px;
+    }
+
+    .vm-panel-sub {
+        font-size: 13px;
+        color: var(--text-2);
+    }
+
+    .vm-detail-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .vm-detail-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .vm-detail-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .vm-detail-key {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text-3);
+        flex-shrink: 0;
+    }
+
+    .vm-detail-val {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-1);
+        text-align: right;
+        line-height: 1.55;
+    }
+
+    .vm-detail-val.muted {
+        color: var(--text-2);
+        font-weight: 500;
+    }
+
+    .vm-detail-highlight {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+        border: 1px solid var(--brand-mid);
+        color: var(--brand-hover);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    /* ── Empty ── */
+    .vm-empty {
+        padding: 56px 24px;
+        text-align: center;
+        color: var(--text-3);
+    }
+
+    .vm-empty svg {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 14px;
+        display: block;
+        opacity: .4;
+    }
+
+    .vm-empty strong {
+        display: block;
+        font-size: 15px;
+        color: var(--text-2);
+        margin-bottom: 4px;
+    }
+
+    .vm-empty p {
+        font-size: 13.5px;
+    }
+
+    /* ══════════════════════════════════
+       MODAL
+    ══════════════════════════════════ */
+    .vm-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, .45);
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 40px 20px 40px;
+        z-index: 9999;
+        overflow-y: auto;
+    }
+
+    .vm-modal-overlay.open {
+        display: flex;
+    }
+
+    .vm-modal {
+        width: 100%;
+        max-width: 860px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-modal);
+        padding: 32px;
+        margin: auto;
+        position: relative;
+    }
+
+    .vm-modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .vm-modal-head h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-1);
+        margin-bottom: 4px;
+    }
+
+    .vm-modal-head p {
+        font-size: 13.5px;
+        color: var(--text-2);
+        line-height: 1.5;
+    }
+
+    .vm-modal-close {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface-alt);
+        color: var(--text-2);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background .12s ease, color .12s ease;
+    }
+
+    .vm-modal-close:hover {
+        background: var(--border-soft);
+        color: var(--text-1);
+    }
+
+    .vm-modal-close svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Form grid */
+    .vm-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 20px;
+    }
+
+    .vm-form-grid .full {
+        grid-column: 1 / -1;
+    }
+
+    .vm-fg {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .vm-fg label {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--text-2);
+    }
+
+    .vm-fg input,
+    .vm-fg select {
+        padding: 10px 13px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border);
+        background: var(--surface-alt);
+        color: var(--text-1);
+        font: 400 14px var(--font);
+        transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+        appearance: none;
+    }
+
+    .vm-fg input:focus,
+    .vm-fg select:focus {
+        outline: none;
+        border-color: var(--brand);
+        background: var(--surface);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
+    .vm-fg .hint {
+        font-size: 12px;
+        color: var(--text-3);
+        line-height: 1.5;
+    }
+
+    /* Upload */
+    .vm-upload-box {
+        border: 2px dashed var(--border);
+        background: var(--surface-alt);
+        border-radius: var(--radius-lg);
+        padding: 28px 20px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        transition: border-color .15s ease, background .15s ease;
+    }
+
+    .vm-upload-box:hover,
+    .vm-upload-box.drag-over {
+        border-color: var(--brand);
+        background: var(--brand-light);
+    }
+
+    .vm-upload-box input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        border: none;
+        background: transparent;
+    }
+
+    .vm-upload-box input[type="file"]::file-selector-button {
+        display: none;
+    }
+
+    .vm-upload-content {
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .vm-upload-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--brand-mid);
+        background: var(--brand-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--brand);
+        margin-bottom: 4px;
+    }
+
+    .vm-upload-icon svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .vm-upload-title {
+        font-size: 14.5px;
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+    .vm-upload-sub {
+        font-size: 12.5px;
+        color: var(--text-3);
+    }
+
+    .vm-preview {
+        margin-top: 14px;
+        height: 200px;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: var(--surface-alt);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .vm-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: none;
+    }
+
+    .vm-preview.has-image img {
+        display: block;
+    }
+
+    .vm-preview-empty {
+        font-size: 13px;
+        color: var(--text-3);
+        text-align: center;
+        padding: 20px;
+        line-height: 1.6;
+    }
+
+    .vm-preview.has-image .vm-preview-empty {
+        display: none;
+    }
+
+    /* Modal footer */
+    .vm-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-soft);
+        margin-top: 24px;
+    }
+
+    .vm-mbtn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 22px;
+        border-radius: var(--radius-md);
+        font: 600 13.5px/1 var(--font);
+        cursor: pointer;
+        transition: background .12s ease, transform .1s ease, box-shadow .12s ease;
+        border: 1.5px solid transparent;
+        white-space: nowrap;
+    }
+
+    .vm-mbtn:active {
+        transform: scale(.98);
+    }
+
+    .vm-mbtn.cancel {
+        background: var(--surface);
+        border-color: var(--border);
+        color: var(--text-2);
+    }
+
+    .vm-mbtn.cancel:hover {
+        background: var(--surface-alt);
+    }
+
+    .vm-mbtn.save {
+        background: var(--brand);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, .3);
+    }
+
+    .vm-mbtn.save:hover {
+        background: var(--brand-hover);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, .4);
+    }
+
+    /* ── Pagination ── */
+    .vm-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-soft);
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .vm-page-info {
+        font-size: 13px;
+        color: var(--text-2);
+    }
+
+    .vm-page-info strong {
+        color: var(--text-1);
+        font-weight: 600;
+    }
+
+    .vm-page-btns {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    .vm-pg-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 8px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        color: var(--text-2);
+        font: 600 13px/1 var(--font);
+        cursor: pointer;
+        transition: background .12s ease, border-color .12s ease, color .12s ease;
+        white-space: nowrap;
+    }
+
+    .vm-pg-btn:hover:not(:disabled):not(.active) {
+        background: var(--brand-light);
+        border-color: var(--brand-mid);
+        color: var(--brand);
+    }
+
+    .vm-pg-btn.active {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+        cursor: default;
+    }
+
+    .vm-pg-btn:disabled {
+        opacity: .38;
+        cursor: not-allowed;
+    }
+
+    .vm-pg-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+        .vm-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .vm-stats .vm-stat:last-child {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @media (max-width: 680px) {
+        .vm-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .vm-stats .vm-stat:last-child {
+            grid-column: auto;
+        }
+
+        .vm-card-head {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .vm-add-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .vm-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .vm-form-grid .full {
+            grid-column: 1;
+        }
+
+        .vm-booking-hero,
+        .vm-detail-row {
+            flex-direction: column;
+        }
+
+        .vm-booking-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .vm-detail-val {
+            text-align: left;
+        }
+
+        .vm-modal {
+            padding: 20px;
+        }
+
+        .vm-modal-head {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .vm-modal-footer {
+            flex-direction: column-reverse;
+        }
+
+        .vm-mbtn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .vm-modal-overlay {
+            padding: 16px;
+        }
+
+        .vm-stat-value {
+            font-size: 28px;
+        }
+    }
+
+    .vm-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--text-2);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .vm-icon-btn i {
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .vm-icon-btn:hover {
+        background: var(--surface-alt);
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-1px);
+    }
+
+    .vm-icon-btn.view {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    .vm-icon-btn.view:hover {
+        background: #3b82f6;
+        color: #fff;
+    }
+
+    .vm-icon-btn.collection {
+        border-color: #10b981;
+        color: #10b981;
+        background: #ecfdf5;
+    }
+
+    .vm-icon-btn.collection:hover {
+        background: #10b981;
+        color: #fff;
+    }
+
+    .vm-icon-btn.edit {
+        border-color: #f59e0b;
+        color: #f59e0b;
+        background: #fffbeb;
+    }
+
+    .vm-icon-btn.edit:hover {
+        background: #f59e0b;
+        color: #fff;
+    }
+
+    .vm-icon-btn.delete {
+        border-color: #ef4444;
+        color: #ef4444;
+        background: #fef2f2;
+    }
+
+    .vm-icon-btn.delete:hover {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    .vm-icon-btn.expenses {
+        border-color: #8b5cf6;
+        color: #8b5cf6;
+        background: #f5f3ff;
+    }
+
+    .vm-icon-btn.expenses:hover {
+        background: #8b5cf6;
+        color: #fff;
+    }
+
+    /* Expense list inside modal */
+    .vm-expense-list {
+        margin-top: 16px;
+    }
+
+    .vm-expense-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: var(--surface);
+        gap: 12px;
+    }
+
+    .vm-expense-item-left {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .vm-expense-item-name {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-1);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .vm-expense-item-date {
+        font-size: 11.5px;
+        color: var(--text-3);
+        margin-top: 2px;
+    }
+
+    .vm-expense-item-amount {
+        font-size: 14px;
+        font-weight: 700;
+        color: #dc2626;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .vm-expense-del-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all .15s ease;
+        font-size: 14px;
+    }
+
+    .vm-expense-del-btn:hover {
+        background: #dc2626;
+        color: #fff;
+    }
+
+    .vm-expense-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #fef2f2;
+        border: 1.5px solid #fecaca;
+        margin-top: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #b91c1c;
+    }
+
+    .vm-expense-empty {
+        text-align: center;
+        padding: 28px 16px;
+        color: var(--text-3);
+        font-size: 13px;
+    }
+
+    .vm-expense-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 16px;
+        background: var(--surface-alt);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 16px;
+    }
+
+    .vm-expense-form .full {
+        grid-column: 1 / -1;
+    }
+
+    .vm-expense-form label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--text-3);
+        margin-bottom: 5px;
+    }
+
+    .vm-expense-form input {
+        width: 100%;
+        padding: 8px 11px;
+        border-radius: 7px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        font: 400 13.5px var(--font);
+        color: var(--text-1);
+        transition: border-color .15s ease;
+    }
+
+    .vm-expense-form input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, .12);
+    }
+
+    .vm-expense-save-btn {
+        grid-column: 1 / -1;
+        padding: 9px 20px;
+        border: none;
+        border-radius: 8px;
+        background: #8b5cf6;
+        color: #fff;
+        font: 600 13.5px var(--font);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        transition: background .15s ease;
+    }
+
+    .vm-expense-save-btn:hover {
+        background: #7c3aed;
+    }
+
+    /* Tooltip on hover */
+    .vm-icon-btn::after {
+        content: attr(title);
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) scale(0.9);
+        background: #1f2937;
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: all 0.2s ease;
+        z-index: 100;
+    }
+
+    .vm-icon-btn::before {
+        content: '';
+        position: absolute;
+        bottom: calc(100% + 2px);
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #1f2937;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        z-index: 100;
+    }
+
+    .vm-icon-btn:hover::after,
+    .vm-icon-btn:hover::before {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+
+    /* ═══ Collection Modal Styles ═══ */
+    .vm-collection-filter {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        padding: 16px;
+        background: var(--surface-alt);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .vm-filter-group {
+        flex: 1;
+    }
+
+    .vm-filter-group label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-3);
+        margin-bottom: 6px;
+    }
+
+    .vm-filter-select {
+        width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--text-1);
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .vm-filter-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .vm-filter-btn {
+        height: 38px;
+        padding: 0 16px;
+        border: none;
+        border-radius: 6px;
+        background: var(--primary);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .vm-filter-btn:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .vm-filter-btn i {
+        font-size: 16px;
+    }
+
+    .vm-collection-loading {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-3);
+    }
+
+    .vm-spinner {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 16px;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .vm-collection-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .vm-coll-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px;
+        border-radius: 10px;
+        border: 1.5px solid;
+    }
+
+    .vm-coll-card.blue {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .vm-coll-card.amber {
+        background: #fffbeb;
+        border-color: #fde68a;
+    }
+
+    .vm-coll-card.green {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+    }
+
+    .vm-coll-card.red {
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .vm-coll-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+
+    .vm-coll-card.blue .vm-coll-icon {
+        background: #3b82f6;
+        color: #fff;
+    }
+
+    .vm-coll-card.amber .vm-coll-icon {
+        background: #f59e0b;
+        color: #fff;
+    }
+
+    .vm-coll-card.green .vm-coll-icon {
+        background: #10b981;
+        color: #fff;
+    }
+
+    .vm-coll-card.red .vm-coll-icon {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    .vm-coll-icon i {
+        font-size: 22px;
+    }
+
+    .vm-coll-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-3);
+        margin-bottom: 4px;
+    }
+
+    .vm-coll-value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .vm-coll-card.blue .vm-coll-value {
+        color: #1e40af;
+    }
+
+    .vm-coll-card.amber .vm-coll-value {
+        color: #b45309;
+    }
+
+    .vm-coll-card.green .vm-coll-value {
+        color: #047857;
+    }
+
+    .vm-coll-card.red .vm-coll-value {
+        color: #b91c1c;
+    }
+
+    .vm-collection-note {
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--text-2);
+    }
+
+    .vm-collection-note i {
+        font-size: 18px;
+        color: #3b82f6;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .vm-collection-note strong {
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+    .vm-coll-clickable {
+        cursor: pointer;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .vm-coll-clickable:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+    }
+
+    @media (max-width: 640px) {
+        .vm-collection-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .vm-collection-filter {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+
+<div class="vm-wrap">
+
+    <!-- Stats -->
+    <?php
+    $total_vehicles    = count($vehicles);
+    $available_count   = 0;
+    $booked_count      = 0;
+    $service_count     = 0;
+    foreach ($vehicles as $v) {
+        if ($v['status'] === 'available') $available_count++;
+        elseif ($v['status'] === 'booked') $booked_count++;
+        elseif ($v['status'] === 'service') $service_count++;
+    }
+    ?>
+    <div class="vm-stats">
+        <div class="vm-stat blue">
+            <div class="vm-stat-label">Total Fleet</div>
+            <div class="vm-stat-value"><?php echo $total_vehicles; ?></div>
+            <div class="vm-stat-desc">All vehicles in your system</div>
+        </div>
+        <div class="vm-stat green">
+            <div class="vm-stat-label">Available</div>
+            <div class="vm-stat-value"><?php echo $available_count; ?></div>
+            <div class="vm-stat-desc">Ready for new bookings</div>
+        </div>
+        <div class="vm-stat amber">
+            <div class="vm-stat-label">Booked / Service</div>
+            <div class="vm-stat-value"><?php echo $booked_count + $service_count; ?></div>
+            <div class="vm-stat-desc">Assigned or under maintenance</div>
+        </div>
+    </div>
+
+    <!-- Table card -->
+    <div class="vm-card">
+        <div class="vm-card-head">
+            <div>
+                <h3>Vehicles</h3>
+                <p>Add, edit or remove vehicles. Update pricing, images, and availability instantly.</p>
+            </div>
+            <button class="vm-add-btn" type="button" id="openVehicleModal">
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Add Vehicle
+            </button>
+        </div>
+
+        <div class="vm-table-wrap">
+            <table class="vm-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Vehicle</th>
+                        <th>Registration</th>
+                        <th>Type</th>
+                        <th>Fuel</th>
+                        <th>Seats</th>
+
+                        <th>Advance</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($vehicles)): ?>
+                        <?php foreach ($vehicles as $index => $vehicle): ?>
+                            <?php $vehicle_image = isset($vehicle['image']) ? $vehicle['image'] : ''; ?>
+                            <?php $active_booking = !empty($vehicle['active_booking']) ? $vehicle['active_booking'] : array(); ?>
+                            <?php
+                            $booking_detail = array(
+                                'vehicle_name' => isset($vehicle['name']) ? $vehicle['name'] : '',
+                                'registration_no' => isset($vehicle['registration_no']) ? $vehicle['registration_no'] : '',
+                                'vehicle_type' => isset($vehicle['vehicle_type']) ? $vehicle['vehicle_type'] : '',
+                                'fuel_type' => isset($vehicle['fuel_type']) ? $vehicle['fuel_type'] : '',
+                                'seats' => isset($vehicle['seats']) ? (int) $vehicle['seats'] : 0,
+                                'rate_per_day' => isset($vehicle['rate_per_day']) ? (float) $vehicle['rate_per_day'] : 0,
+                                'price_6_hours' => isset($vehicle['price_6_hours']) ? (float) $vehicle['price_6_hours'] : 0,
+                                'price_12_hours' => isset($vehicle['price_12_hours']) ? (float) $vehicle['price_12_hours'] : 0,
+                                'price_24_hours' => isset($vehicle['price_24_hours']) ? (float) $vehicle['price_24_hours'] : 0,
+                                'extra_hour_charge' => isset($vehicle['extra_hour_charge']) ? (float) $vehicle['extra_hour_charge'] : 0,
+                                'advance_amount' => isset($vehicle['advance_amount']) ? (float) $vehicle['advance_amount'] : 0,
+                                'vehicle_status' => isset($vehicle['status']) ? $vehicle['status'] : '',
+                                'booking_code' => !empty($active_booking['booking_code']) ? $active_booking['booking_code'] : '',
+                                'booking_status' => !empty($active_booking['effective_status']) ? $active_booking['effective_status'] : (!empty($active_booking['status']) ? $active_booking['status'] : ''),
+                                'customer_name' => !empty($active_booking['customer_name']) ? $active_booking['customer_name'] : '',
+                                'customer_phone' => !empty($active_booking['customer_phone']) ? $active_booking['customer_phone'] : '',
+                                'trip_label' => !empty($active_booking['trip_label']) ? $active_booking['trip_label'] : '',
+                                'trip_route' => !empty($active_booking['trip_route']) ? $active_booking['trip_route'] : '',
+                                'pickup_date' => !empty($active_booking['pickup_date']) ? date('d M Y', strtotime($active_booking['pickup_date'])) : '',
+                                'return_date' => !empty($active_booking['return_date']) ? date('d M Y', strtotime($active_booking['return_date'])) : '',
+
+                                'amount' => !empty($active_booking['amount']) ? (float) $active_booking['amount'] : 0,
+                                'paid_amount' => !empty($active_booking['paid_amount']) ? (float) $active_booking['paid_amount'] : 0,
+                                'balance_amount' => !empty($active_booking['balance_amount']) ? (float) $active_booking['balance_amount'] : 0,
+                                'payment_status' => !empty($active_booking['payment_status']) ? $active_booking['payment_status'] : '',
+                                'booking_created_at' => !empty($active_booking['created_at']) ? date('d M Y, h:i A', strtotime($active_booking['created_at'])) : '',
+                            );
+                            ?>
+                            <tr data-row="1">
+                                <td><span class="vm-row-num"><?php echo (int)$index + 1; ?></span></td>
+                                <td>
+                                    <div class="vm-vehicle-info">
+                                        <div class="vm-thumb">
+                                            <?php if ($vehicle_image !== ''): ?>
+                                                <img src="<?php echo app_vehicle_image_url($vehicle_image); ?>" alt="<?php echo html_escape($vehicle['name']); ?>">
+                                            <?php else: ?>
+                                                <span class="vm-thumb-empty">No Image</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div>
+                                            <div class="vm-vehicle-name"><?php echo html_escape($vehicle['name']); ?></div>
+                                            <div class="vm-vehicle-reg"><?php echo html_escape($vehicle['registration_no']); ?></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="vm-mono"><?php echo html_escape($vehicle['registration_no']); ?></td>
+                                <td><?php echo html_escape($vehicle['vehicle_type']); ?></td>
+                                <td><?php echo html_escape($vehicle['fuel_type']); ?></td>
+                                <td><?php echo (int)$vehicle['seats']; ?></td>
+
+                                <td class="vm-mono">₹<?php echo number_format((float)$vehicle['advance_amount'], 0); ?></td>
+                                <td>
+                                    <span class="vm-badge <?php echo html_escape($vehicle['status']); ?>">
+                                        <?php echo ucfirst(html_escape($vehicle['status'])); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="vm-actions">
+                                        <?php if ($vehicle['status'] === 'booked'): ?>
+                                            <button class="vm-icon-btn view js-open-booking-view" type="button" title="View Active Booking"
+                                                data-detail="<?php echo html_escape(json_encode($booking_detail)); ?>">
+                                                <i class="ti ti-eye"></i>
+                                            </button>
+                                        <?php endif; ?>
+
+                                        <button class="vm-icon-btn expenses js-open-expenses" type="button" title="Add / View Expenses"
+                                            data-vehicle-id="<?php echo (int)$vehicle['id']; ?>"
+                                            data-vehicle-name="<?php echo html_escape($vehicle['name']); ?>"
+                                            data-registration="<?php echo html_escape($vehicle['registration_no']); ?>">
+                                            <i class="ti ti-receipt"></i>
+                                        </button>
+                                        <button class="vm-icon-btn collection js-open-collection" type="button" title="View Collection Summary"
+                                            data-vehicle-id="<?php echo (int)$vehicle['id']; ?>"
+                                            data-vehicle-name="<?php echo html_escape($vehicle['name']); ?>"
+                                            data-registration="<?php echo html_escape($vehicle['registration_no']); ?>">
+                                            <i class="ti ti-report-money"></i>
+                                        </button>
+
+                                        <button class="vm-icon-btn edit edit-vehicle-btn" type="button" title="Edit Vehicle"
+                                            data-id="<?php echo (int)$vehicle['id']; ?>"
+                                            data-name="<?php echo html_escape($vehicle['name']); ?>"
+                                            data-registration="<?php echo html_escape($vehicle['registration_no']); ?>"
+                                            data-type="<?php echo html_escape($vehicle['vehicle_type']); ?>"
+                                            data-fuel="<?php echo html_escape($vehicle['fuel_type']); ?>"
+                                            data-seats="<?php echo (int)$vehicle['seats']; ?>"
+                                            data-rate-km="<?php echo isset($vehicle['rate_per_day']) ? (float)$vehicle['rate_per_day'] : 0; ?>"
+                                            data-price-6-hours="<?php echo isset($vehicle['price_6_hours']) ? (float)$vehicle['price_6_hours'] : 0; ?>"
+                                            data-price-12-hours="<?php echo isset($vehicle['price_12_hours']) ? (float)$vehicle['price_12_hours'] : 0; ?>"
+                                            data-price-24-hours="<?php echo isset($vehicle['price_24_hours']) ? (float)$vehicle['price_24_hours'] : 0; ?>"
+                                            data-extra-hour-charge="<?php echo isset($vehicle['extra_hour_charge']) ? (float)$vehicle['extra_hour_charge'] : 0; ?>"
+                                            data-advance="<?php echo (float)$vehicle['advance_amount']; ?>"
+                                            data-status="<?php echo html_escape($vehicle['status']); ?>"
+                                            data-image="<?php echo html_escape($vehicle_image); ?>">
+                                            <i class="ti ti-edit"></i>
+                                        </button>
+
+                                        <form method="post" action="<?php echo base_url('admin/vehicles/delete/' . (int)$vehicle['id']); ?>"
+                                            class="js-swal-confirm-form"
+                                            data-swal-title="Delete vehicle?"
+                                            data-swal-text="This vehicle will be removed permanently."
+                                            data-swal-confirm="Delete"
+                                            style="display:inline;">
+                                            <button class="vm-icon-btn delete" type="submit" title="Delete Vehicle">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="10">
+                                <div class="vm-empty">
+                                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="2" y="12" width="36" height="22" rx="5" stroke="currentColor" stroke-width="2" />
+                                        <path d="M8 12V9a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v3" stroke="currentColor" stroke-width="2" />
+                                        <circle cx="12" cy="29" r="3" stroke="currentColor" stroke-width="2" />
+                                        <circle cx="28" cy="29" r="3" stroke="currentColor" stroke-width="2" />
+                                    </svg>
+                                    <strong>No vehicles yet</strong>
+                                    <p>Click "Add Vehicle" to add your first vehicle to the fleet.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="vm-pagination" id="vmPagination">
+            <div class="vm-page-info" id="vmPageInfo"></div>
+            <div class="vm-page-btns" id="vmPageBtns"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div class="vm-modal-overlay" id="vehicleBookingViewModal">
+    <div class="vm-modal">
+        <div class="vm-modal-head">
+            <div>
+                <h3>Vehicle Booking Details</h3>
+                <p>See the current booking and customer information for this vehicle in one clean summary card.</p>
+            </div>
+            <button class="vm-modal-close" type="button" id="closeVehicleBookingViewModal" aria-label="Close">
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="vm-booking-card">
+            <div class="vm-booking-hero">
+                <div>
+                    <div class="vm-booking-kicker">Current Assignment</div>
+                    <div class="vm-booking-title" id="vmBookingViewTitle">Vehicle Name</div>
+                    <div class="vm-booking-sub" id="vmBookingViewSubtitle">Registration and category details will appear here.</div>
+                </div>
+                <div class="vm-booking-status" id="vmBookingViewStatus">Available</div>
+            </div>
+            <div class="vm-booking-grid">
+                <div class="vm-booking-panel">
+                    <div class="vm-panel-label">Customer</div>
+                    <div class="vm-panel-head">
+                        <div class="vm-panel-avatar" id="vmBookingCustomerAvatar">C</div>
+                        <div>
+                            <div class="vm-panel-title" id="vmBookingCustomerName">No customer assigned</div>
+                            <div class="vm-panel-sub" id="vmBookingCustomerPhone">Vehicle is currently not linked to any active booking.</div>
+                        </div>
+                    </div>
+                    <div class="vm-detail-list">
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Booking ID</div>
+                            <div class="vm-detail-val" id="vmBookingCode">-</div>
+                        </div>
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Status</div>
+                            <div class="vm-detail-val" id="vmBookingStatusText">-</div>
+                        </div>
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Payment</div>
+                            <div class="vm-detail-val" id="vmBookingPaymentStatus">-</div>
+                        </div>
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Created</div>
+                            <div class="vm-detail-val muted" id="vmBookingCreatedAt">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="vm-booking-panel">
+                    <div class="vm-panel-label">Trip Summary</div>
+                    <div class="vm-detail-list">
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Dates</div>
+                            <div class="vm-detail-val" id="vmBookingTripDates">-</div>
+                        </div>
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Route</div>
+                            <div class="vm-detail-val" id="vmBookingRoute">-</div>
+                        </div>
+
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Estimated Fare</div>
+                            <div class="vm-detail-val" id="vmBookingAmount">-</div>
+                        </div>
+                        <div class="vm-detail-row">
+                            <div class="vm-detail-key">Paid / Balance</div>
+                            <div class="vm-detail-val" id="vmBookingBalance">-</div>
+                        </div>
+                    </div>
+                    <div class="vm-detail-highlight" id="vmVehicleMeta">
+                        Category, fuel, seating, and advance amount will appear here.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="vm-modal-overlay" id="vehicleModal">
+    <div class="vm-modal">
+        <div class="vm-modal-head">
+            <div>
+                <h3 id="vehicleModalTitle">Add New Vehicle</h3>
+                <p id="vehicleModalCopy">Fill in all details, set pricing and advance, then upload a vehicle photo.</p>
+            </div>
+            <button class="vm-modal-close" type="button" id="closeVehicleModal" aria-label="Close">
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+
+        <form method="post" action="<?php echo base_url('admin/vehicles/store'); ?>" enctype="multipart/form-data" id="vehicleForm">
+            <div class="vm-form-grid">
+
+                <div class="vm-fg">
+                    <label>Vehicle Name</label>
+                    <input type="text" name="name" id="vehicle_name" placeholder="e.g. Maruti Swift Dzire" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Registration No.</label>
+                    <input type="text" name="registration_no" id="registration_no" placeholder="GJ01-XX-1234" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Vehicle Category</label>
+                    <input type="text" name="vehicle_type" id="vehicle_type" placeholder="Sedan / SUV / Hatchback" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Fuel Type</label>
+                    <input type="text" name="fuel_type" id="fuel_type" placeholder="Petrol / Diesel / CNG" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Seating Capacity</label>
+                    <input type="number" name="seats" id="seats" placeholder="5" min="1" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Rate Per KM (₹)</label>
+                    <input type="number" step="0.01" min="0" name="rate_per_km" id="rate_per_km" placeholder="18.00" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>6 Hours Price (₹)</label>
+                    <input type="number" step="0.01" min="0" name="price_6_hours" id="price_6_hours" placeholder="1800.00" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>12 Hours Price (₹)</label>
+                    <input type="number" step="0.01" min="0" name="price_12_hours" id="price_12_hours" placeholder="3200.00" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>24 Hours Price (₹)</label>
+                    <input type="number" step="0.01" min="0" name="price_24_hours" id="price_24_hours" placeholder="5000.00" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Extra Charge Per Hour (₹)</label>
+                    <input type="number" step="0.01" min="0" name="extra_hour_charge" id="extra_hour_charge" placeholder="300.00" required>
+                    <span class="hint">Extra charge for every additional hour beyond 6, 12, or 24 hour package.</span>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Required Advance (₹)</label>
+                    <input type="number" step="0.01" name="advance_amount" id="advance_amount" placeholder="1000" required>
+                </div>
+
+                <div class="vm-fg">
+                    <label>Status</label>
+                    <select name="status" id="status">
+                        <option value="available">Available</option>
+                        <option value="booked">Booked</option>
+                        <option value="service">Service</option>
+                    </select>
+                    <span class="hint">Set to "Service" when under maintenance.</span>
+                </div>
+
+                <div class="vm-fg full">
+                    <label>Vehicle Image</label>
+                    <div class="vm-upload-box" id="uploadBox">
+                        <input type="file" name="vehicle_image" id="vehicle_image" accept=".jpg,.jpeg,.png,.webp">
+                        <div class="vm-upload-content">
+                            <div class="vm-upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            <span class="vm-upload-title" id="uploadTitle">Click to upload vehicle photo</span>
+                            <span class="vm-upload-sub" id="uploadSub">JPG, PNG or WEBP &middot; Max 4 MB</span>
+                        </div>
+                    </div>
+                    <div class="vm-preview" id="vehiclePreviewWrap">
+                        <div class="vm-preview-empty" id="vehiclePreviewEmpty">No image selected yet</div>
+                        <img src="" alt="Vehicle preview" id="vehiclePreview">
+                    </div>
+                </div>
+
+            </div><!-- /.vm-form-grid -->
+
+            <div class="vm-modal-footer">
+                <button class="vm-mbtn cancel" type="button" id="cancelVehicleModal">Cancel</button>
+                <button class="vm-mbtn save" type="submit" id="vehicleSubmitBtn">Add Vehicle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ EXPENSES MODAL ══ -->
+<div class="vm-modal-overlay" id="vehicleExpensesModal">
+    <div class="vm-modal" style="max-width:560px;">
+        <div class="vm-modal-head">
+            <div>
+                <h3>Vehicle Expenses</h3>
+                <p id="expensesModalVehicle">Add and track expenses for this vehicle.</p>
+            </div>
+            <button class="vm-modal-close" type="button" id="closeExpensesModal" aria-label="Close">
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div style="padding:0 2px 4px;">
+            <!-- Add Expense Form -->
+            <div class="vm-expense-form" id="expenseAddForm">
+                <div>
+                    <label>Expense Name</label>
+                    <input type="text" id="expInputName" placeholder="e.g. Fuel, Service, Tyre" maxlength="255">
+                </div>
+                <div>
+                    <label>Amount (₹)</label>
+                    <input type="number" id="expInputAmount" placeholder="0.00" min="0" step="0.01">
+                </div>
+                <div>
+                    <label>Date</label>
+                    <input type="date" id="expInputDate">
+                </div>
+                <div>
+                    <label>Notes (optional)</label>
+                    <input type="text" id="expInputNotes" placeholder="Short note..." maxlength="255">
+                </div>
+                <button class="vm-expense-save-btn" type="button" id="expSaveBtn">
+                    <i class="ti ti-plus"></i> Add Expense
+                </button>
+            </div>
+            <!-- Filter row -->
+            <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px;">
+                <div style="flex:1;">
+                    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);display:block;margin-bottom:5px;">Month</label>
+                    <select id="expFilterMonth" class="vm-filter-select"></select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);display:block;margin-bottom:5px;">Year</label>
+                    <select id="expFilterYear" class="vm-filter-select"></select>
+                </div>
+                <button class="vm-filter-btn" type="button" id="expApplyFilter" style="background:#8b5cf6;">
+                    <i class="ti ti-refresh"></i> Filter
+                </button>
+            </div>
+            <!-- Expense list -->
+            <div id="expenseListWrap">
+                <div class="vm-collection-loading" id="expenseLoading" style="display:none;">
+                    <div class="vm-spinner" style="border-top-color:#8b5cf6;"></div>
+                    <p>Loading expenses...</p>
+                </div>
+                <div class="vm-expense-list" id="expenseList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ══ COLLECTION MODAL ══ -->
+<div class="vm-modal-overlay" id="vehicleCollectionModal">
+    <div class="vm-modal">
+        <div class="vm-modal-head">
+            <div>
+                <h3>Collection Summary</h3>
+                <p id="collectionModalVehicle">Vehicle collection details for selected month</p>
+            </div>
+            <button class="vm-modal-close" type="button" id="closeCollectionModal" aria-label="Close">
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="vm-modal-body">
+            <!-- Month/Year Filter -->
+            <div class="vm-collection-filter">
+                <div class="vm-filter-group">
+                    <label>Month</label>
+                    <select id="collectionMonth" class="vm-filter-select">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="vm-filter-group">
+                    <label>Year</label>
+                    <select id="collectionYear" class="vm-filter-select">
+                        <!-- Will be populated by JavaScript -->
+                    </select>
+                </div>
+                <button class="vm-filter-btn" type="button" id="applyCollectionFilter">
+                    <i class="ti ti-refresh"></i>
+                    Apply
+                </button>
+            </div>
+
+            <!-- Loading State -->
+            <div class="vm-collection-loading" id="collectionLoading">
+                <div class="vm-spinner"></div>
+                <p>Loading collection data...</p>
+            </div>
+
+            <!-- Collection Stats -->
+            <div class="vm-collection-stats" id="collectionStats" style="display:none;">
+                <div class="vm-coll-card blue vm-coll-clickable" id="collTotalBookingsCard" title="View customers for this month">
+                    <div class="vm-coll-icon">
+                        <i class="ti ti-calendar-stats"></i>
+                    </div>
+                    <div class="vm-coll-info">
+                        <div class="vm-coll-label">Total Bookings</div>
+                        <div class="vm-coll-value" id="collTotalBookings">0</div>
+                    </div>
+                </div>
+
+                <div class="vm-coll-card amber vm-coll-clickable" id="collTotalAmountCard" title="View customers for this month">
+                    <div class="vm-coll-icon">
+                        <i class="ti ti-currency-rupee"></i>
+                    </div>
+                    <div class="vm-coll-info">
+                        <div class="vm-coll-label">Total Amount</div>
+                        <div class="vm-coll-value" id="collTotalAmount">₹0</div>
+                    </div>
+                </div>
+
+                <div class="vm-coll-card green vm-coll-clickable" id="collReceivedCard" title="View customers who paid this month">
+                    <div class="vm-coll-icon">
+                        <i class="ti ti-circle-check"></i>
+                    </div>
+                    <div class="vm-coll-info">
+                        <div class="vm-coll-label">Received (This Month)</div>
+                        <div class="vm-coll-value" id="collReceivedAmount">₹0</div>
+                    </div>
+                </div>
+
+                <div class="vm-coll-card red vm-coll-clickable" id="collPendingCard" title="View customers with pending payment">
+                    <div class="vm-coll-icon">
+                        <i class="ti ti-alert-circle"></i>
+                    </div>
+                    <div class="vm-coll-info">
+                        <div class="vm-coll-label">Pending Amount</div>
+                        <div class="vm-coll-value" id="collPendingAmount">₹0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="vm-collection-note" id="collectionNote" style="display:none;">
+                <i class="ti ti-info-circle"></i>
+                <div>
+                    <strong>Note:</strong> All amounts shown are for bookings that started (pickup date) in the selected month only.
+                </div>
+            </div>
+
+            <!-- Expense breakdown in collection -->
+            <div id="collExpenseSection" style="display:none;margin-top:20px;">
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+                    <i class="ti ti-receipt" style="font-size:14px;vertical-align:middle;margin-right:5px;color:#8b5cf6;"></i>
+                    Expenses This Month
+                </div>
+                <div id="collExpenseList"></div>
+                <div class="vm-coll-card" style="background:#f5f3ff;border:1.5px solid #ddd6fe;margin-top:14px;">
+                    <div class="vm-coll-icon" style="background:#8b5cf6;">
+                        <i class="ti ti-trending-down"></i>
+                    </div>
+                    <div class="vm-coll-info">
+                        <div class="vm-coll-label">Net (Received − Expenses)</div>
+                        <div class="vm-coll-value" id="collNetCollection" style="color:#5b21b6;">₹0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        var modal = document.getElementById('vehicleModal');
+        var bookingViewModal = document.getElementById('vehicleBookingViewModal');
+        var form = document.getElementById('vehicleForm');
+        var title = document.getElementById('vehicleModalTitle');
+        var copy = document.getElementById('vehicleModalCopy');
+        var submitBtn = document.getElementById('vehicleSubmitBtn');
+        var imageInput = document.getElementById('vehicle_image');
+        var preview = document.getElementById('vehiclePreview');
+        var previewWrap = document.getElementById('vehiclePreviewWrap');
+        var previewEmpty = document.getElementById('vehiclePreviewEmpty');
+        var uploadBox = document.getElementById('uploadBox');
+        var uploadTitle = document.getElementById('uploadTitle');
+        var uploadSub = document.getElementById('uploadSub');
+        var baseStore = '<?php echo base_url('admin/vehicles/store'); ?>';
+        var baseUpdate = '<?php echo base_url('admin/vehicles/update/'); ?>';
+
+        /* ── Pagination ── */
+        var PER_PAGE = 10;
+        var currentPage = 1;
+        var allRows = [];
+
+        function initPagination() {
+            allRows = Array.prototype.slice.call(
+                document.querySelectorAll('.vm-table tbody tr[data-row]')
+            );
+            renderPage(1);
+        }
+
+        function renderPage(page) {
+            currentPage = page;
+            var total = allRows.length;
+            var totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            var start = (currentPage - 1) * PER_PAGE;
+            var end = start + PER_PAGE;
+
+            allRows.forEach(function(row, i) {
+                row.style.display = (i >= start && i < end) ? '' : 'none';
+            });
+
+            // Page info
+            var infoEl = document.getElementById('vmPageInfo');
+            if (infoEl) {
+                if (total === 0) {
+                    infoEl.innerHTML = 'No vehicles';
+                } else {
+                    infoEl.innerHTML =
+                        'Showing <strong>' + (start + 1) + '–' + Math.min(end, total) +
+                        '</strong> of <strong>' + total + '</strong> vehicles';
+                }
+            }
+
+            buildButtons(totalPages);
+        }
+
+        function buildButtons(totalPages) {
+            var container = document.getElementById('vmPageBtns');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Prev
+            var prev = makeBtn(null, currentPage === 1, false, 'prev');
+            prev.innerHTML = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 3L6 8l4 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            prev.setAttribute('aria-label', 'Previous page');
+            container.appendChild(prev);
+
+            // Page numbers
+            getPageNumbers(currentPage, totalPages).forEach(function(p) {
+                if (p === '…') {
+                    var dots = document.createElement('span');
+                    dots.textContent = '…';
+                    dots.style.cssText = 'padding:0 4px;color:var(--text-3);font-size:13px;line-height:34px;';
+                    container.appendChild(dots);
+                } else {
+                    var btn = makeBtn(p, false, p === currentPage, 'number');
+                    btn.textContent = p;
+                    btn.setAttribute('aria-label', 'Page ' + p);
+                    container.appendChild(btn);
+                }
+            });
+
+            // Next
+            var next = makeBtn(null, currentPage === totalPages, false, 'next');
+            next.innerHTML = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 3l4 5-4 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            next.setAttribute('aria-label', 'Next page');
+            container.appendChild(next);
+        }
+
+        function makeBtn(label, disabled, active, type) {
+            var btn = document.createElement('button');
+            btn.className = 'vm-pg-btn' + (active ? ' active' : '');
+            btn.type = 'button';
+            btn.disabled = !!disabled;
+            btn.addEventListener('click', function() {
+                if (type === 'prev') renderPage(currentPage - 1);
+                else if (type === 'next') renderPage(currentPage + 1);
+                else if (type === 'number' && !active) renderPage(label);
+            });
+            return btn;
+        }
+
+        function getPageNumbers(cur, total) {
+            if (total <= 7) {
+                var arr = [];
+                for (var i = 1; i <= total; i++) arr.push(i);
+                return arr;
+            }
+            if (cur <= 3) return [1, 2, 3, '…', total];
+            if (cur >= total - 2) return [1, '…', total - 2, total - 1, total];
+            return [1, '…', cur - 1, cur, cur + 1, '…', total];
+        }
+        /* ── End Pagination ── */
+
+        function fmtMoney(value) {
+            var num = parseFloat(value || 0);
+            return 'Rs ' + num.toLocaleString('en-IN', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function getInitials(name) {
+            var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return 'C';
+            if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+            return (parts[0].slice(0, 1) + parts[1].slice(0, 1)).toUpperCase();
+        }
+
+        function setPreview(src) {
+            if (src) {
+                preview.src = src;
+                previewWrap.classList.add('has-image');
+            } else {
+                preview.removeAttribute('src');
+                previewWrap.classList.remove('has-image');
+            }
+        }
+
+        function setUpload(label, sub) {
+            uploadTitle.textContent = label || 'Click to upload vehicle photo';
+            uploadSub.textContent = sub || 'JPG, PNG or WEBP \u00b7 Max 4 MB';
+        }
+
+        function openModal() {
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            modal.scrollTop = 0;
+        }
+
+        function openBookingViewModal() {
+            bookingViewModal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            bookingViewModal.scrollTop = 0;
+        }
+
+        function closeModal() {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+            form.reset();
+            form.action = baseStore;
+            title.textContent = 'Add New Vehicle';
+            copy.textContent = 'Fill in all details, set pricing and advance, then upload a vehicle photo.';
+            submitBtn.textContent = 'Add Vehicle';
+            setPreview('');
+            setUpload('', '');
+        }
+
+        function closeBookingViewModal() {
+            bookingViewModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function setVal(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.value = val || '';
+        }
+
+        document.getElementById('openVehicleModal').addEventListener('click', function() {
+            closeModal();
+            openModal();
+        });
+
+        document.getElementById('closeVehicleModal').addEventListener('click', closeModal);
+        document.getElementById('cancelVehicleModal').addEventListener('click', closeModal);
+        document.getElementById('closeVehicleBookingViewModal').addEventListener('click', closeBookingViewModal);
+
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+        bookingViewModal.addEventListener('click', function(e) {
+            if (e.target === bookingViewModal) closeBookingViewModal();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+            if (e.key === 'Escape' && bookingViewModal.classList.contains('open')) closeBookingViewModal();
+        });
+
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) {
+                    setPreview('');
+                    setUpload('', '');
+                    return;
+                }
+                setUpload(file.name, 'Image selected — click to replace');
+                setPreview(URL.createObjectURL(file));
+            });
+        }
+
+        if (uploadBox) {
+            uploadBox.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadBox.classList.add('drag-over');
+            });
+            uploadBox.addEventListener('dragleave', function() {
+                uploadBox.classList.remove('drag-over');
+            });
+            uploadBox.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadBox.classList.remove('drag-over');
+                if (e.dataTransfer.files.length) {
+                    imageInput.files = e.dataTransfer.files;
+                    imageInput.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+                }
+            });
+        }
+
+        document.querySelectorAll('.edit-vehicle-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                form.action = baseUpdate + btn.dataset.id;
+                title.textContent = 'Edit Vehicle';
+                copy.textContent = 'Update vehicle details, rates, status, or upload a new image.';
+                submitBtn.textContent = 'Save Changes';
+                setVal('vehicle_name', btn.dataset.name);
+                setVal('registration_no', btn.dataset.registration);
+                setVal('vehicle_type', btn.dataset.type);
+                setVal('fuel_type', btn.dataset.fuel);
+                setVal('seats', btn.dataset.seats);
+                setVal('rate_per_km', btn.getAttribute('data-rate-km'));
+                setVal('price_6_hours', btn.getAttribute('data-price-6-hours'));
+                setVal('price_12_hours', btn.getAttribute('data-price-12-hours'));
+                setVal('price_24_hours', btn.getAttribute('data-price-24-hours'));
+                setVal('extra_hour_charge', btn.getAttribute('data-extra-hour-charge'));
+                setVal('advance_amount', btn.dataset.advance);
+                setVal('status', btn.dataset.status);
+                var img = btn.dataset.image;
+                if (img) {
+                    var fileName = img.split('/').pop();
+                    setUpload(fileName, 'Current image loaded — choose another to replace');
+                    setPreview('<?php echo base_url(); ?>' + img);
+                } else {
+                    setUpload('', '');
+                    setPreview('');
+                }
+                openModal();
+            });
+        });
+
+        document.querySelectorAll('.js-open-booking-view').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var detail = {};
+                try {
+                    detail = JSON.parse(btn.getAttribute('data-detail') || '{}');
+                } catch (e) {
+                    detail = {};
+                }
+
+                var statusText = String(detail.booking_status || detail.vehicle_status || 'available')
+                    .replace(/\b\w/g, function(ch) {
+                        return ch.toUpperCase();
+                    });
+                var customerName = detail.customer_name || 'No customer assigned';
+                var customerPhone = detail.customer_phone || 'Vehicle is currently not linked to any active booking.';
+
+                document.getElementById('vmBookingViewTitle').textContent = detail.vehicle_name || 'Vehicle Details';
+                document.getElementById('vmBookingViewSubtitle').textContent = [detail.registration_no, detail.vehicle_type, detail.fuel_type].filter(Boolean).join(' • ') || 'Vehicle information';
+                document.getElementById('vmBookingViewStatus').textContent = statusText;
+                document.getElementById('vmBookingCustomerAvatar').textContent = getInitials(customerName);
+                document.getElementById('vmBookingCustomerName').textContent = customerName;
+                document.getElementById('vmBookingCustomerPhone').textContent = customerPhone;
+                document.getElementById('vmBookingCode').textContent = detail.booking_code || 'No active booking';
+                document.getElementById('vmBookingStatusText').textContent = statusText;
+                document.getElementById('vmBookingPaymentStatus').textContent = detail.payment_status || 'No payment activity';
+                document.getElementById('vmBookingCreatedAt').textContent = detail.booking_created_at || '-';
+                document.getElementById('vmBookingTripDates').textContent = detail.trip_label || '-';
+                document.getElementById('vmBookingRoute').textContent = detail.trip_route || '-';
+                document.getElementById('vmBookingAmount').textContent = detail.amount ? fmtMoney(detail.amount) : '-';
+                document.getElementById('vmBookingBalance').textContent = (detail.paid_amount || detail.balance_amount) ?
+                    (fmtMoney(detail.paid_amount || 0) + ' paid • ' + fmtMoney(detail.balance_amount || 0) + ' balance') :
+                    'No payment recorded';
+                document.getElementById('vmVehicleMeta').textContent =
+                    'Seats: ' + (detail.seats || '-') +
+                    ' • 6H: ' + fmtMoney(detail.price_6_hours || 0) +
+                    ' • 12H: ' + fmtMoney(detail.price_12_hours || 0) +
+                    ' • 24H: ' + fmtMoney(detail.price_24_hours || 0) +
+                    ' • Extra/Hr: ' + fmtMoney(detail.extra_hour_charge || 0) +
+                    ' • Advance: ' + fmtMoney(detail.advance_amount || 0) +
+                    ' • Pickup: ' + (detail.pickup_date || '-') +
+                    ' • Return: ' + (detail.return_date || '-');
+
+                openBookingViewModal();
+            });
+        });
+        var collectionModal = document.getElementById('vehicleCollectionModal');
+        var currentVehicleId = null;
+        var currentVehicleName = '';
+        var currentVehicleReg = '';
+
+        // Populate year dropdown
+        function populateYearDropdown() {
+            var yearSelect = document.getElementById('collectionYear');
+            if (!yearSelect) return;
+
+            var currentYear = new Date().getFullYear();
+            yearSelect.innerHTML = '';
+
+            for (var i = currentYear; i >= currentYear - 5; i--) {
+                var option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                if (i === currentYear) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // Set current month
+        function setCurrentMonth() {
+            var monthSelect = document.getElementById('collectionMonth');
+            if (monthSelect) {
+                monthSelect.value = new Date().getMonth() + 1;
+            }
+        }
+
+        // Format money
+        function fmtCollMoney(value) {
+            var num = parseFloat(value || 0);
+            return '₹' + num.toLocaleString('en-IN', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+
+        // Month names
+        var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Load collection data
+        function loadCollectionData(vehicleId, year, month) {
+            document.getElementById('collectionLoading').style.display = 'block';
+            document.getElementById('collectionStats').style.display = 'none';
+            document.getElementById('collectionNote').style.display = 'none';
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<?php echo base_url('admin/vehicles/get_collection_summary'); ?>', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            xhr.onload = function() {
+                document.getElementById('collectionLoading').style.display = 'none';
+
+                if (xhr.status === 200) {
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+
+                        if (response.success) {
+                            var data = response.data;
+
+                            document.getElementById('collTotalBookings').textContent = data.total_bookings || 0;
+                            document.getElementById('collTotalAmount').textContent = fmtCollMoney(data.total_amount);
+                            document.getElementById('collReceivedAmount').textContent = fmtCollMoney(data.received_amount);
+                            document.getElementById('collPendingAmount').textContent = fmtCollMoney(data.pending_amount);
+
+                            document.getElementById('collectionStats').style.display = 'grid';
+                            document.getElementById('collectionNote').style.display = 'flex';
+
+                            // Expenses in collection
+                            var expSection = document.getElementById('collExpenseSection');
+                            var expList = document.getElementById('collExpenseList');
+                            var netEl = document.getElementById('collNetCollection');
+                            if (expSection && expList && netEl) {
+                                var expenses = data.expenses || [];
+                                var expHtml = '';
+                                if (expenses.length) {
+                                    expenses.forEach(function(exp) {
+                                        expHtml += '<div class="vm-expense-item">' +
+                                            '<div class="vm-expense-item-left">' +
+                                            '<div class="vm-expense-item-name">' + (exp.expense_name || '') + '</div>' +
+                                            '<div class="vm-expense-item-date">' + (exp.expense_date || '') + (exp.notes ? ' · ' + exp.notes : '') + '</div>' +
+                                            '</div>' +
+                                            '<div class="vm-expense-item-amount">' + fmtCollMoney(exp.amount) + '</div>' +
+                                            '</div>';
+                                    });
+                                    expHtml += '<div class="vm-expense-total"><span>Total Expenses</span><span>' + fmtCollMoney(data.total_expenses || 0) + '</span></div>';
+                                } else {
+                                    expHtml = '<div class="vm-expense-empty" style="padding:14px;font-size:12.5px;">No expenses recorded this month.</div>';
+                                }
+                                expList.innerHTML = expHtml;
+                                netEl.textContent = fmtCollMoney(data.net_collection || 0);
+                                expSection.style.display = 'block';
+                            }
+
+                            var monthName = monthNames[(data.month - 1)] || '';
+                            document.getElementById('collectionModalVehicle').textContent =
+                                currentVehicleName + ' (' + currentVehicleReg + ') - ' + monthName + ' ' + data.year;
+                        } else {
+                            alert(response.message || 'Failed to load collection data');
+                        }
+                    } catch (e) {
+                        alert('Error parsing response');
+                        console.error(e);
+                    }
+                } else {
+                    alert('Server error: ' + xhr.status);
+                }
+            };
+
+            xhr.onerror = function() {
+                document.getElementById('collectionLoading').style.display = 'none';
+                alert('Network error');
+            };
+
+            xhr.send('vehicle_id=' + vehicleId + '&year=' + year + '&month=' + month);
+        }
+
+        // Open collection modal
+        function openCollectionModal(vehicleId, vehicleName, vehicleReg) {
+            currentVehicleId = vehicleId;
+            currentVehicleName = vehicleName;
+            currentVehicleReg = vehicleReg;
+
+            populateYearDropdown();
+            setCurrentMonth();
+
+            var year = document.getElementById('collectionYear').value;
+            var month = document.getElementById('collectionMonth').value;
+
+            loadCollectionData(vehicleId, year, month);
+
+            collectionModal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close collection modal
+        function closeCollectionModal() {
+            collectionModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Event listeners
+        document.getElementById('closeCollectionModal').addEventListener('click', closeCollectionModal);
+
+        collectionModal.addEventListener('click', function(e) {
+            if (e.target === collectionModal) closeCollectionModal();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && collectionModal.classList.contains('open')) {
+                closeCollectionModal();
+            }
+        });
+
+        document.getElementById('applyCollectionFilter').addEventListener('click', function() {
+            var year = document.getElementById('collectionYear').value;
+            var month = document.getElementById('collectionMonth').value;
+            loadCollectionData(currentVehicleId, year, month);
+        });
+
+        function goToCustomersFilteredBy(paymentFilter) {
+            if (!currentVehicleId) return;
+            var year = document.getElementById('collectionYear').value;
+            var month = document.getElementById('collectionMonth').value;
+            var url = '<?php echo base_url('admin/customers'); ?>' +
+                '?vehicle_id=' + encodeURIComponent(currentVehicleId) +
+                '&year=' + encodeURIComponent(year) +
+                '&month=' + encodeURIComponent(month) +
+                '&payment_filter=' + encodeURIComponent(paymentFilter);
+            window.location.href = url;
+        }
+
+        var collTotalBkgsEl = document.getElementById('collTotalBookingsCard');
+        if (collTotalBkgsEl) {
+            collTotalBkgsEl.addEventListener('click', function() {
+                goToCustomersFilteredBy('');
+            });
+        }
+
+        var collTotalAmtEl = document.getElementById('collTotalAmountCard');
+        if (collTotalAmtEl) {
+            collTotalAmtEl.addEventListener('click', function() {
+                goToCustomersFilteredBy('');
+            });
+        }
+
+        document.getElementById('collReceivedCard').addEventListener('click', function() {
+            goToCustomersFilteredBy('received');
+        });
+
+        document.getElementById('collPendingCard').addEventListener('click', function() {
+            goToCustomersFilteredBy('pending');
+        });
+
+        // Attach to collection buttons
+        document.querySelectorAll('.js-open-collection').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var vehicleId = btn.getAttribute('data-vehicle-id');
+                var vehicleName = btn.getAttribute('data-vehicle-name');
+                var vehicleReg = btn.getAttribute('data-registration');
+                openCollectionModal(vehicleId, vehicleName, vehicleReg);
+            });
+        });
+
+        /* ══ EXPENSES MODAL ══ */
+        (function() {
+            var expModal = document.getElementById('vehicleExpensesModal');
+            var currentExpVehicleId = null;
+            var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            function fmtExp(n) {
+                return '₹' + parseFloat(n || 0).toLocaleString('en-IN', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                });
+            }
+
+            function populateExpFilters() {
+                var ms = document.getElementById('expFilterMonth');
+                var ys = document.getElementById('expFilterYear');
+                if (!ms || !ys) return;
+                ms.innerHTML = '';
+                for (var m = 1; m <= 12; m++) {
+                    var o = document.createElement('option');
+                    o.value = m;
+                    o.textContent = monthNames[m - 1];
+                    if (m === new Date().getMonth() + 1) o.selected = true;
+                    ms.appendChild(o);
+                }
+                ys.innerHTML = '';
+                var cy = new Date().getFullYear();
+                for (var y = cy; y >= cy - 5; y--) {
+                    var oy = document.createElement('option');
+                    oy.value = y;
+                    oy.textContent = y;
+                    if (y === cy) oy.selected = true;
+                    ys.appendChild(oy);
+                }
+            }
+
+            function setExpDate() {
+                var d = document.getElementById('expInputDate');
+                if (d) d.value = new Date().toISOString().slice(0, 10);
+            }
+
+            function renderExpenses(data) {
+                var list = document.getElementById('expenseList');
+                if (!list) return;
+                var expenses = data.expenses || [];
+                if (!expenses.length) {
+                    list.innerHTML = '<div class="vm-expense-empty"><i class="ti ti-receipt-off" style="font-size:28px;display:block;margin-bottom:8px;"></i>No expenses found for this period.</div>';
+                    return;
+                }
+                var html = '';
+                expenses.forEach(function(exp) {
+                    html += '<div class="vm-expense-item">' +
+                        '<div class="vm-expense-item-left">' +
+                        '<div class="vm-expense-item-name">' + escHtml(exp.expense_name) + '</div>' +
+                        '<div class="vm-expense-item-date">' + (exp.expense_date || '') + (exp.notes ? ' · ' + escHtml(exp.notes) : '') + '</div>' +
+                        '</div>' +
+                        '<div class="vm-expense-item-amount">' + fmtExp(exp.amount) + '</div>' +
+                        '<button class="vm-expense-del-btn js-del-expense" data-id="' + exp.id + '" data-vehicle="' + exp.vehicle_id + '" title="Delete"><i class="ti ti-trash"></i></button>' +
+                        '</div>';
+                });
+                html += '<div class="vm-expense-total"><span>Total Expenses</span><span>' + fmtExp(data.total) + '</span></div>';
+                list.innerHTML = html;
+                // bind delete
+                list.querySelectorAll('.js-del-expense').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        if (!confirm('Delete this expense?')) return;
+                        doDeleteExpense(btn.getAttribute('data-id'), btn.getAttribute('data-vehicle'));
+                    });
+                });
+            }
+
+            function escHtml(s) {
+                return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function loadExpenses(vehicleId, year, month) {
+                document.getElementById('expenseLoading').style.display = 'block';
+                document.getElementById('expenseList').innerHTML = '';
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '<?php echo base_url('admin/vehicles/get_expenses'); ?>', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.onload = function() {
+                    document.getElementById('expenseLoading').style.display = 'none';
+                    try {
+                        var r = JSON.parse(xhr.responseText);
+                        if (r.success) renderExpenses(r.data);
+                        else document.getElementById('expenseList').innerHTML = '<div class="vm-expense-empty">' + escHtml(r.message) + '</div>';
+                    } catch (e) {
+                        document.getElementById('expenseList').innerHTML = '<div class="vm-expense-empty">Error loading data.</div>';
+                    }
+                };
+                xhr.onerror = function() {
+                    document.getElementById('expenseLoading').style.display = 'none';
+                    document.getElementById('expenseList').innerHTML = '<div class="vm-expense-empty">Network error.</div>';
+                };
+                xhr.send('vehicle_id=' + vehicleId + '&year=' + year + '&month=' + month);
+            }
+
+            function doDeleteExpense(expId, vehicleId) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '<?php echo base_url('admin/vehicles/delete_expense'); ?>', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.onload = function() {
+                    try {
+                        var r = JSON.parse(xhr.responseText);
+                        if (r.success) {
+                            loadExpenses(currentExpVehicleId, document.getElementById('expFilterYear').value, document.getElementById('expFilterMonth').value);
+                        } else alert(r.message || 'Delete failed.');
+                    } catch (e) {
+                        alert('Error.');
+                    }
+                };
+                xhr.send('expense_id=' + expId + '&vehicle_id=' + vehicleId);
+            }
+
+            document.getElementById('expSaveBtn').addEventListener('click', function() {
+                var name = (document.getElementById('expInputName').value || '').trim();
+                var amount = parseFloat(document.getElementById('expInputAmount').value || '0');
+                var date = document.getElementById('expInputDate').value || '';
+                var notes = (document.getElementById('expInputNotes').value || '').trim();
+                if (!name) {
+                    alert('Please enter an expense name.');
+                    return;
+                }
+                if (amount <= 0) {
+                    alert('Please enter a valid amount greater than 0.');
+                    return;
+                }
+                this.disabled = true;
+                this.textContent = 'Saving...';
+                var self = this;
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '<?php echo base_url('admin/vehicles/add_expense'); ?>', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.onload = function() {
+                    self.disabled = false;
+                    self.innerHTML = '<i class="ti ti-plus"></i> Add Expense';
+                    try {
+                        var r = JSON.parse(xhr.responseText);
+                        if (r.success) {
+                            document.getElementById('expInputName').value = '';
+                            document.getElementById('expInputAmount').value = '';
+                            document.getElementById('expInputNotes').value = '';
+                            setExpDate();
+                            loadExpenses(currentExpVehicleId, document.getElementById('expFilterYear').value, document.getElementById('expFilterMonth').value);
+                        } else alert(r.message || 'Failed to save.');
+                    } catch (e) {
+                        alert('Error saving expense.');
+                    }
+                };
+                xhr.onerror = function() {
+                    self.disabled = false;
+                    self.innerHTML = '<i class="ti ti-plus"></i> Add Expense';
+                    alert('Network error.');
+                };
+                var csrfMeta = document.querySelector('meta[name="csrf-token-name"]');
+                var csrfNameVal = csrfMeta ? csrfMeta.getAttribute('content') : '';
+                var csrfHashMeta = document.querySelector('meta[name="csrf-token-value"]');
+                var csrfHashVal = csrfHashMeta ? csrfHashMeta.getAttribute('content') : '';
+                var csrfParam = (csrfNameVal && csrfHashVal) ? '&' + csrfNameVal + '=' + csrfHashVal : '';
+                xhr.send('vehicle_id=' + currentExpVehicleId + '&expense_name=' + encodeURIComponent(name) + '&amount=' + amount + '&expense_date=' + date + '&notes=' + encodeURIComponent(notes) + csrfParam);
+            });
+
+            document.getElementById('expApplyFilter').addEventListener('click', function() {
+                loadExpenses(currentExpVehicleId, document.getElementById('expFilterYear').value, document.getElementById('expFilterMonth').value);
+            });
+
+            document.getElementById('closeExpensesModal').addEventListener('click', function() {
+                expModal.classList.remove('open');
+                document.body.style.overflow = '';
+            });
+            expModal.addEventListener('click', function(e) {
+                if (e.target === expModal) {
+                    expModal.classList.remove('open');
+                    document.body.style.overflow = '';
+                }
+            });
+
+            document.querySelectorAll('.js-open-expenses').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    currentExpVehicleId = btn.getAttribute('data-vehicle-id');
+                    document.getElementById('expensesModalVehicle').textContent = btn.getAttribute('data-vehicle-name') + ' (' + btn.getAttribute('data-registration') + ')';
+                    populateExpFilters();
+                    setExpDate();
+                    loadExpenses(currentExpVehicleId, new Date().getFullYear(), new Date().getMonth() + 1);
+                    expModal.classList.add('open');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+        })();
+        /* ══ END EXPENSES MODAL ══ */
+        // Init pagination last
+        initPagination();
+    })();
+</script>

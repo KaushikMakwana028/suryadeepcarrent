@@ -1,0 +1,1398 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --cream: #FBF8EE;
+        --cream-dark: #FFF1BF;
+        --ink: #17355C;
+        --ink-soft: #456383;
+        --ink-muted: #73849A;
+        --accent: #235EA7;
+        --accent-hover: #163F72;
+        --gold-light: #FFF5D6;
+        --border: rgba(23, 53, 92, 0.1);
+        --border-strong: rgba(23, 53, 92, 0.18);
+        --card-bg: #FFFFFF;
+        --shadow-sm: 0 1px 4px rgba(23, 53, 92, 0.06), 0 0 0 0.5px rgba(23, 53, 92, 0.08);
+        --shadow-md: 0 4px 20px rgba(23, 53, 92, 0.09), 0 0 0 0.5px rgba(23, 53, 92, 0.07);
+        --shadow-hover: 0 10px 40px rgba(23, 53, 92, 0.13), 0 0 0 0.5px rgba(23, 53, 92, 0.09);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 18px;
+        --radius-xl: 24px;
+        --font-display: 'Fraunces', Georgia, serif;
+        --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html,
+    body {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+
+    .vc-page {
+        font-family: var(--font-body);
+        background: var(--cream);
+        min-height: 100vh;
+        padding-bottom: 80px;
+        overflow-x: hidden;
+    }
+
+    /* ── Hero ── */
+    .vc-hero {
+        background: linear-gradient(135deg, #fffdf5 0%, #fff3c8 100%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        padding: 56px 40px 72px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vc-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 70% 120% at 110% 50%, rgba(35, 94, 167, .12) 0%, transparent 60%),
+            radial-gradient(ellipse 50% 80% at -10% 80%, rgba(241, 193, 79, .18) 0%, transparent 55%);
+        pointer-events: none;
+    }
+
+    .vc-hero-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+
+    .vc-eyebrow {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .vc-eyebrow::before {
+        content: '';
+        width: 20px;
+        height: 1.5px;
+        background: var(--accent);
+        border-radius: 2px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .vc-hero h1 {
+        font-family: var(--font-display);
+        font-size: clamp(28px, 6vw, 52px);
+        font-weight: 300;
+        color: var(--ink);
+        line-height: 1.1;
+        letter-spacing: -.02em;
+    }
+
+    .vc-hero h1 em {
+        font-style: italic;
+        color: var(--accent);
+    }
+
+    .vc-hero-sub {
+        font-size: 15px;
+        color: var(--ink-soft);
+        margin-top: 12px;
+        max-width: 400px;
+        line-height: 1.6;
+    }
+
+    .vc-hero-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--accent);
+        color: #FAF8F3;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        padding: 13px 24px;
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        transition: background .18s, transform .15s;
+        white-space: nowrap;
+        flex-shrink: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .vc-hero-cta:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+    }
+
+    .vc-hero-cta svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+    }
+
+    /* ── Body ── */
+    .vc-body {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    /* ── Filters ── */
+    .vc-filters-wrap {
+        background: var(--card-bg);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        padding: 24px 28px;
+        margin-top: 20px;
+        position: relative;
+        z-index: 10;
+        border: .5px solid var(--border);
+    }
+
+    .vc-search-row {
+        display: flex;
+        align-items: center;
+        background: var(--cream);
+        border: 1.5px solid var(--border-strong);
+        border-radius: var(--radius-md);
+        padding: 0 16px;
+        margin-bottom: 20px;
+        transition: border-color .18s, box-shadow .18s;
+    }
+
+    .vc-search-row:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(35, 94, 167, .1);
+    }
+
+    .vc-search-icon {
+        color: var(--ink-muted);
+        flex-shrink: 0;
+    }
+
+    .vc-search-icon svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+    }
+
+    #vehicleSearch {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-family: var(--font-body);
+        font-size: 16px;
+        /* 16px prevents iOS auto-zoom */
+        color: var(--ink);
+        padding: 13px 12px;
+        width: 100%;
+    }
+
+    #vehicleSearch::placeholder {
+        color: var(--ink-muted);
+    }
+
+    .vc-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+
+    .vc-filter-group label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        margin-bottom: 6px;
+    }
+
+    .vc-filter-group select {
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+        background: var(--cream) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%238A867E' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 12px center;
+        border: 1.5px solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-size: 16px;
+        /* prevents iOS zoom */
+        color: var(--ink);
+        padding: 9px 32px 9px 12px;
+        cursor: pointer;
+        transition: border-color .18s, box-shadow .18s;
+        outline: none;
+    }
+
+    .vc-filter-group select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(35, 94, 167, .1);
+    }
+
+    /* ── Results meta ── */
+    .vc-results-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 28px 0 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .vc-results-count {
+        font-size: 14px;
+        color: var(--ink-muted);
+    }
+
+    .vc-results-count strong {
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    /* ── Grid ── */
+    .vc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    /* ── Card ── */
+    .vc-card {
+        background: var(--card-bg);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: .5px solid var(--border);
+        overflow: hidden;
+        transition: box-shadow .22s, transform .22s;
+        display: flex;
+        flex-direction: column;
+        animation: fadeUp .4s ease both;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .vc-card:hover {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-3px);
+    }
+
+    /* ── Media ── */
+    .vc-card-media {
+        position: relative;
+        height: 192px;
+        background: var(--cream-dark);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .vc-card-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform .4s ease;
+    }
+
+    .vc-card:hover .vc-card-media img {
+        transform: scale(1.04);
+    }
+
+    .vc-card-media-empty {
+        height: 192px;
+        background: linear-gradient(135deg, #EDE9E0 0%, #D9D4C9 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .vc-empty-initial {
+        width: 60px;
+        height: 60px;
+        background: rgba(26, 24, 20, .08);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 26px;
+        font-weight: 600;
+        color: var(--ink-soft);
+    }
+
+    .vc-empty-text {
+        font-size: 12px;
+        color: var(--ink-muted);
+        font-weight: 500;
+    }
+
+    .vc-type-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(250, 248, 243, .92);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: .5px solid rgba(26, 24, 20, .12);
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        max-width: calc(100% - 24px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ── Card body ── */
+    .vc-card-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .vc-card-name {
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: -.01em;
+        margin-bottom: 2px;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .vc-card-reg {
+        font-size: 12px;
+        color: var(--ink-muted);
+        font-weight: 500;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .vc-status-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: -6px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .vc-booked-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+        border: 1px solid #fecdd3;
+        color: #9f1239;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -.01em;
+        box-shadow: 0 4px 12px rgba(190, 24, 93, .08);
+    }
+
+    .vc-booked-chip::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #e11d48;
+        box-shadow: 0 0 0 4px rgba(225, 29, 72, .12);
+        flex-shrink: 0;
+    }
+
+    .vc-spec-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .vc-spec-item {
+        background: var(--cream);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        min-width: 0;
+    }
+
+    .vc-spec-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--ink-muted);
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+
+    .vc-spec-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .vc-divider {
+        height: .5px;
+        background: var(--border);
+        margin: 0 0 16px;
+    }
+
+    /* ── Card footer ── */
+    .vc-card-footer {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: auto;
+    }
+
+    .vc-card-footer-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* ── Advance tag ── */
+    .vc-advance-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--gold-light);
+        border: .5px solid rgba(212, 160, 23, .3);
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #7A5C00;
+        padding: 4px 10px;
+        margin-top: 8px;
+        white-space: nowrap;
+    }
+
+    /* ── Starts-from ── */
+    .vc-starts-from {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .vc-starts-from-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-muted);
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .vc-starts-from-price {
+        font-family: var(--font-display);
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: -.02em;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .vc-starts-from-unit {
+        font-size: 11px;
+        color: var(--ink-muted);
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    /* ── Book button ── */
+    .vc-book-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--accent);
+        color: #FAF8F3;
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+        transition: background .18s, transform .15s;
+        flex-shrink: 0;
+        white-space: nowrap;
+        align-self: flex-end;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .vc-book-btn:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+    }
+
+    .vc-book-btn svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+    }
+
+    /* ── Empty / no vehicles states ── */
+    .vc-empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 80px 24px;
+    }
+
+    .vc-empty-icon {
+        width: 72px;
+        height: 72px;
+        background: var(--cream-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .vc-empty-icon svg {
+        width: 32px;
+        height: 32px;
+        color: var(--ink-muted);
+    }
+
+    .vc-empty-state h3 {
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 8px;
+    }
+
+    .vc-empty-state p {
+        font-size: 15px;
+        color: var(--ink-muted);
+        line-height: 1.6;
+    }
+
+    .vc-no-vehicles {
+        text-align: center;
+        padding: 100px 24px;
+    }
+
+    .vc-no-vehicles h2 {
+        font-family: var(--font-display);
+        font-size: 28px;
+        font-weight: 300;
+        color: var(--ink);
+        margin-bottom: 10px;
+    }
+
+    .vc-no-vehicles p {
+        font-size: 15px;
+        color: var(--ink-muted);
+        line-height: 1.6;
+    }
+
+    /* ── Pagination ── */
+    .vc-pagination-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 36px 0 8px;
+        flex-wrap: wrap;
+    }
+
+    .vc-page-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 38px;
+        height: 38px;
+        padding: 0 6px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border-strong);
+        background: var(--card-bg);
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: background .15s, border-color .15s, color .15s, transform .12s;
+        user-select: none;
+        line-height: 1;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .vc-page-btn:hover:not(:disabled):not(.active) {
+        background: var(--cream-dark);
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-1px);
+    }
+
+    .vc-page-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #FAF8F3;
+        font-weight: 600;
+        cursor: default;
+    }
+
+    .vc-page-btn:disabled {
+        opacity: .38;
+        cursor: not-allowed;
+    }
+
+    .vc-page-btn.ellipsis {
+        border-color: transparent;
+        background: transparent;
+        cursor: default;
+        color: var(--ink-muted);
+        pointer-events: none;
+        min-width: 24px;
+    }
+
+    .vc-page-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+
+    /* Tablet ≤ 1024px */
+    @media (max-width: 1024px) {
+        .vc-filter-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Mobile ≤ 768px */
+    @media (max-width: 768px) {
+
+        .vc-hero {
+            border-radius: var(--radius-lg);
+            padding: 32px 20px 40px;
+        }
+
+        .vc-hero-inner {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .vc-hero-sub {
+            font-size: 14px;
+            max-width: 100%;
+        }
+
+        /* Full-width CTA on mobile */
+        .vc-hero-cta {
+            width: 100%;
+            justify-content: center;
+            padding: 14px 20px;
+            font-size: 15px;
+        }
+
+        .vc-body {
+            padding: 0 14px;
+        }
+
+        .vc-filters-wrap {
+            padding: 16px;
+            margin-top: 16px;
+            border-radius: var(--radius-lg);
+        }
+
+        .vc-search-row {
+            margin-bottom: 16px;
+        }
+
+        .vc-filter-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Single column cards */
+        .vc-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .vc-card {
+            border-radius: var(--radius-md);
+        }
+
+        .vc-results-meta {
+            padding: 20px 0 16px;
+        }
+
+        /* Bigger pagination tap targets */
+        .vc-page-btn {
+            min-width: 42px;
+            height: 42px;
+        }
+    }
+
+    /* Small mobile ≤ 480px */
+    @media (max-width: 480px) {
+
+        .vc-hero h1 {
+            font-size: 26px;
+        }
+
+        /* All filters full-width */
+        .vc-filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .vc-card-media,
+        .vc-card-media-empty {
+            height: 168px;
+        }
+
+        .vc-card-body {
+            padding: 16px;
+        }
+
+        .vc-card-name {
+            font-size: 18px;
+        }
+
+        /* Stack price + button vertically */
+        .vc-card-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        /* Full-width Book button */
+        .vc-book-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 13px 20px;
+            font-size: 15px;
+            align-self: auto;
+        }
+
+        .vc-starts-from-price {
+            font-size: 22px;
+        }
+    }
+
+    /* Extra small ≤ 360px */
+    @media (max-width: 360px) {
+        .vc-body {
+            padding: 0 10px;
+        }
+
+        .vc-hero {
+            padding: 24px 14px 32px;
+        }
+
+        .vc-hero h1 {
+            font-size: 22px;
+        }
+    }
+</style>
+
+<div class="vc-page">
+
+    <div class="vc-hero">
+        <div class="vc-hero-inner">
+            <div>
+                <div class="vc-eyebrow">Surya Deep Car Rent</div>
+
+                <h1>
+                    Best Car Rental &<br>
+                    <em>Cab Booking Service</em>
+                </h1>
+
+                <p class="vc-hero-sub">
+                    Welcome to Surya Deep Car Rent. Book affordable cars, taxi services, airport pickup, local rides, and outstation travel with comfort and reliability.
+                </p>
+            </div>
+
+            <a class="vc-hero-cta" href="<?php echo base_url('bookings/create'); ?>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                Book a Car
+            </a>
+        </div>
+    </div>
+
+    <div class="vc-body">
+
+        <?php if (!empty($vehicles)): ?>
+
+            <div class="vc-filters-wrap">
+                <div class="vc-search-row">
+                    <span class="vc-search-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                    </span>
+                    <input type="text" id="vehicleSearch" placeholder="Search by name, reg, type or fuel…" autocomplete="off">
+                </div>
+                <div class="vc-filter-grid">
+                    <div class="vc-filter-group">
+                        <label for="filterType">Vehicle Type</label>
+                        <select id="filterType">
+                            <option value="">All Types</option>
+                            <?php
+                            $types = array_values(array_unique(array_filter(array_map(function ($v) {
+                                return trim((string)$v['vehicle_type']);
+                            }, $vehicles))));
+                            sort($types);
+                            foreach ($types as $type): ?>
+                                <option value="<?php echo html_escape(strtolower($type)); ?>"><?php echo html_escape($type); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="vc-filter-group">
+                        <label for="filterFuel">Fuel Type</label>
+                        <select id="filterFuel">
+                            <option value="">All Fuel Types</option>
+                            <?php
+                            $fuels = array_values(array_unique(array_filter(array_map(function ($v) {
+                                return trim((string)$v['fuel_type']);
+                            }, $vehicles))));
+                            sort($fuels);
+                            foreach ($fuels as $fuel): ?>
+                                <option value="<?php echo html_escape(strtolower($fuel)); ?>"><?php echo html_escape($fuel); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="vc-filter-group">
+                        <label for="filterSeats">Min Seats</label>
+                        <select id="filterSeats">
+                            <option value="">Any Seats</option>
+                            <?php
+                            $seats = array_values(array_unique(array_filter(array_map(function ($v) {
+                                return (int)$v['seats'];
+                            }, $vehicles))));
+                            sort($seats);
+                            foreach ($seats as $seat): ?>
+                                <option value="<?php echo (int)$seat; ?>"><?php echo (int)$seat; ?>+ Seats</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="vc-filter-group">
+                        <label for="filterAdvance">Max Price (₹)</label>
+                        <select id="filterAdvance">
+                            <option value="">Any Amount</option>
+                            <option value="1000">Up to ₹1,000</option>
+                            <option value="2000">Up to ₹2,000</option>
+                            <option value="5000">Up to ₹5,000</option>
+                            <option value="10000">Up to ₹10,000</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vc-results-meta">
+                <div class="vc-results-count" id="resultsCount">
+                    Showing <strong><?php echo count($vehicles); ?></strong> vehicles
+                </div>
+            </div>
+
+            <div class="vc-grid" id="vehicleGrid">
+                <?php foreach ($vehicles as $vehicle): ?>
+                    <?php
+                    $vehicle_image = isset($vehicle['image']) ? trim($vehicle['image']) : '';
+                    $pkg_prices = array_filter([
+                        (float)(isset($vehicle['price_6_hours'])  ? $vehicle['price_6_hours']  : 0),
+                        (float)(isset($vehicle['price_12_hours']) ? $vehicle['price_12_hours'] : 0),
+                        (float)(isset($vehicle['price_24_hours']) ? $vehicle['price_24_hours'] : 0),
+                    ], function ($p) {
+                        return $p > 0;
+                    });
+                    $min_price = $pkg_prices ? min($pkg_prices) : 0;
+                    $km_price = (float)(isset($vehicle['rate_per_day']) ? $vehicle['rate_per_day'] : 0);
+                    $filter_price = $min_price > 0 ? $min_price : $km_price;
+                    $is_booked = isset($vehicle['status']) && $vehicle['status'] === 'booked' && !empty($vehicle['active_booking']);
+                    $booked_label = $is_booked ? 'Booked till ' . date('d M', strtotime($vehicle['active_booking']['return_date'])) : '';
+                    ?>
+                    <article
+                        class="vc-card js-vehicle-card"
+                        data-name="<?php echo html_escape(strtolower($vehicle['name'])); ?>"
+                        data-registration="<?php echo html_escape(strtolower($vehicle['registration_no'])); ?>"
+                        data-type="<?php echo html_escape(strtolower($vehicle['vehicle_type'])); ?>"
+                        data-fuel="<?php echo html_escape(strtolower($vehicle['fuel_type'])); ?>"
+                        data-seats="<?php echo (int)$vehicle['seats']; ?>"
+                        data-price="<?php echo (float)$filter_price; ?>"
+                        data-km-price="<?php echo (float)$km_price; ?>">
+
+                        <?php if ($vehicle_image !== ''): ?>
+                            <div class="vc-card-media">
+                                <img
+                                    src="<?php echo app_vehicle_image_url($vehicle_image); ?>"
+                                    alt="<?php echo html_escape($vehicle['name']); ?>"
+                                    loading="lazy">
+                                <span class="vc-type-badge"><?php echo html_escape($vehicle['vehicle_type']); ?></span>
+                            </div>
+                        <?php else: ?>
+                            <div class="vc-card-media-empty">
+                                <div class="vc-empty-initial"><?php echo html_escape(strtoupper(substr($vehicle['name'], 0, 1))); ?></div>
+                                <div class="vc-empty-text">No image available</div>
+                                <span class="vc-type-badge" style="position:static;margin-top:4px;"><?php echo html_escape($vehicle['vehicle_type']); ?></span>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="vc-card-body">
+                            <div class="vc-card-name"><?php echo html_escape($vehicle['name']); ?></div>
+                            <div class="vc-card-reg"><?php echo html_escape($vehicle['registration_no']); ?></div>
+                            <?php if ($is_booked): ?>
+                                <div class="vc-status-row">
+                                    <span class="vc-booked-chip"><?php echo html_escape($booked_label); ?></span>
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="vc-spec-grid">
+                                <div class="vc-spec-item">
+                                    <div class="vc-spec-label">Fuel</div>
+                                    <div class="vc-spec-value"><?php echo html_escape($vehicle['fuel_type']); ?></div>
+                                </div>
+                                <div class="vc-spec-item">
+                                    <div class="vc-spec-label">Seats</div>
+                                    <div class="vc-spec-value"><?php echo (int)$vehicle['seats']; ?> Seats</div>
+                                </div>
+                            </div>
+
+                            <div class="vc-divider"></div>
+
+                            <div class="vc-card-footer">
+                                <div class="vc-card-footer-info">
+                                    <div class="vc-starts-from">
+                                        <span class="vc-starts-from-label">From</span>
+                                        <span class="vc-starts-from-price">&#8377;<?php echo number_format($min_price, 0); ?></span>
+                                        <span class="vc-starts-from-unit">/ 6 hrs</span>
+                                    </div>
+                                    <div class="vc-card-reg" style="margin-top:4px;margin-bottom:0;">
+                                        KM: &#8377;<?php echo number_format($km_price, 0); ?>/km
+                                    </div>
+
+                                </div>
+
+                                <a class="vc-book-btn" href="<?php echo base_url('bookings/create?vehicle_id=' . (int)$vehicle['id']); ?>">
+                                    Book
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+
+                <div id="vehicleEmptyState" class="vc-empty-state" style="display:none;">
+                    <div class="vc-empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                    </div>
+                    <h3>No vehicles found</h3>
+                    <p>Try adjusting your search or clearing some filters.</p>
+                </div>
+            </div>
+
+            <nav class="vc-pagination-wrap" id="vcPagination" aria-label="Vehicle pages"></nav>
+
+        <?php else: ?>
+            <div class="vc-no-vehicles">
+                <h2>No vehicles available right now.</h2>
+                <p>Please contact our admin team to check for availability.</p>
+            </div>
+        <?php endif; ?>
+
+    </div>
+</div>
+
+<?php if (!empty($vehicles)): ?>
+    <script>
+        (function() {
+            var search = document.getElementById('vehicleSearch');
+            var selType = document.getElementById('filterType');
+            var selFuel = document.getElementById('filterFuel');
+            var selSeats = document.getElementById('filterSeats');
+            var selAdv = document.getElementById('filterAdvance');
+            var advLabel = document.querySelector('label[for="filterAdvance"]');
+            var grid = document.getElementById('vehicleGrid');
+            var emptyEl = document.getElementById('vehicleEmptyState');
+            var countEl = document.getElementById('resultsCount');
+            var pagNav = document.getElementById('vcPagination');
+
+            if (advLabel) {
+                advLabel.textContent = 'Max Price (Rs)';
+            }
+
+            var allCards = Array.prototype.slice.call(document.querySelectorAll('.js-vehicle-card'));
+            var currentPage = 1;
+            var visibleCards = allCards.slice();
+
+            var STORAGE_KEY = 'vcState:' + window.location.pathname;
+
+            function saveState() {
+                try {
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        page: currentPage,
+                        search: search.value || '',
+                        type: selType.value || '',
+                        fuel: selFuel.value || '',
+                        seats: selSeats.value || '',
+                        adv: selAdv.value || ''
+                    }));
+                } catch (e) {}
+            }
+
+            function restoreState() {
+                var saved = null;
+                try {
+                    saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null');
+                } catch (e) {}
+
+                if (!saved) {
+                    render();
+                    return;
+                }
+
+                search.value = saved.search || '';
+                selType.value = saved.type || '';
+                selFuel.value = saved.fuel || '';
+                selSeats.value = saved.seats || '';
+                selAdv.value = saved.adv || '';
+
+                // applyFilters() resets to page 1, so set the saved page afterwards
+                applyFilters();
+                currentPage = parseInt(saved.page || '1', 10) || 1;
+                render();
+            }
+
+            function perPage() {
+                return window.innerWidth <= 768 ? 6 : 9;
+            }
+
+            function toTitleCase(value) {
+                return String(value || '').replace(/\w\S*/g, function(word) {
+                    return word.charAt(0).toUpperCase() + word.slice(1);
+                });
+            }
+
+            function formatIndianNumber(value) {
+                var number = Math.round(parseFloat(value || '0'));
+                if (!isFinite(number)) {
+                    return '0';
+                }
+
+                var str = String(Math.abs(number));
+                if (str.length <= 3) {
+                    return (number < 0 ? '-' : '') + str;
+                }
+
+                var lastThree = str.slice(-3);
+                var rest = str.slice(0, -3);
+                rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+
+                return (number < 0 ? '-' : '') + rest + ',' + lastThree;
+            }
+
+            function getCardAttr(card, name) {
+                return String(card.getAttribute('data-' + name) || '').trim();
+            }
+
+            function setFilterOptions(select, values, placeholder, formatter) {
+                var currentValue = select.value || '';
+                select.innerHTML = '';
+
+                var defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = placeholder;
+                select.appendChild(defaultOption);
+
+                values.forEach(function(value) {
+                    var option = document.createElement('option');
+                    option.value = String(value);
+                    option.textContent = formatter ? formatter(value) : value;
+                    if (option.value === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+
+            function buildDynamicFilterOptions() {
+                var types = [];
+                var fuels = [];
+                var seats = [];
+                var prices = [];
+
+                allCards.forEach(function(card) {
+                    var type = getCardAttr(card, 'type').toLowerCase();
+                    var fuel = getCardAttr(card, 'fuel').toLowerCase();
+                    var seat = parseInt(getCardAttr(card, 'seats') || '0', 10);
+                    var price = parseFloat(getCardAttr(card, 'price') || '0');
+
+                    if (type && types.indexOf(type) === -1) types.push(type);
+                    if (fuel && fuels.indexOf(fuel) === -1) fuels.push(fuel);
+                    if (seat > 0 && seats.indexOf(seat) === -1) seats.push(seat);
+                    if (price > 0 && prices.indexOf(price) === -1) prices.push(price);
+                });
+
+                types.sort();
+                fuels.sort();
+                seats.sort(function(a, b) {
+                    return a - b;
+                });
+                prices.sort(function(a, b) {
+                    return a - b;
+                });
+
+                setFilterOptions(selType, types, 'All Types', function(value) {
+                    return toTitleCase(value);
+                });
+                setFilterOptions(selFuel, fuels, 'All Fuel Types', function(value) {
+                    return toTitleCase(value);
+                });
+                setFilterOptions(selSeats, seats, 'Any Seats', function(value) {
+                    return value + '+ Seats';
+                });
+                setFilterOptions(selAdv, prices, 'Any Amount', function(value) {
+                    return 'Up to Rs ' + formatIndianNumber(value);
+                });
+            }
+
+            function applyFilters() {
+                var sv = (search.value || '').toLowerCase().trim();
+                var tv = (selType.value || '').toLowerCase();
+                var fv = (selFuel.value || '').toLowerCase();
+                var sev = parseInt(selSeats.value || '0', 10);
+                var maxPrice = parseFloat(selAdv.value || '0');
+
+                visibleCards = allCards.filter(function(card) {
+                    var cardName = getCardAttr(card, 'name').toLowerCase();
+                    var cardRegistration = getCardAttr(card, 'registration').toLowerCase();
+                    var cardType = getCardAttr(card, 'type').toLowerCase();
+                    var cardFuel = getCardAttr(card, 'fuel').toLowerCase();
+                    var cardSeats = parseInt(getCardAttr(card, 'seats') || '0', 10);
+                    var cardPrice = parseFloat(getCardAttr(card, 'price') || '0');
+
+                    return (
+                        (sv === '' ||
+                            cardName.indexOf(sv) !== -1 ||
+                            cardRegistration.indexOf(sv) !== -1 ||
+                            cardType.indexOf(sv) !== -1 ||
+                            cardFuel.indexOf(sv) !== -1) &&
+                        (tv === '' || cardType === tv) &&
+                        (fv === '' || cardFuel === fv) &&
+                        (sev === 0 || cardSeats >= sev) &&
+                        (maxPrice === 0 || (cardPrice > 0 && cardPrice <= maxPrice))
+                    );
+                });
+                currentPage = 1;
+                render();
+            }
+
+            function render() {
+                var pp = perPage();
+                var total = visibleCards.length;
+                var totalPages = Math.max(1, Math.ceil(total / pp));
+                if (currentPage > totalPages) currentPage = totalPages;
+
+                var start = (currentPage - 1) * pp;
+                var end = start + pp;
+
+                allCards.forEach(function(c) {
+                    c.style.display = 'none';
+                });
+                visibleCards.forEach(function(c, i) {
+                    var show = (i >= start && i < end);
+                    c.style.display = show ? '' : 'none';
+                    if (show) {
+                        c.style.animation = 'none';
+                        void c.offsetHeight;
+                        c.style.animation = '';
+                        c.style.animationDelay = ((i - start) * 0.05) + 's';
+                    }
+                });
+
+                emptyEl.style.display = (total === 0) ? '' : 'none';
+
+                saveState();
+
+                if (countEl) {
+                    countEl.innerHTML = total === 0 ?
+                        'No vehicles found' :
+                        'Showing <strong>' + (start + 1) + '–' + Math.min(end, total) +
+                        '</strong> of <strong>' + total + '</strong> vehicle' + (total !== 1 ? 's' : '');
+                }
+
+                buildPagination(totalPages);
+            }
+
+            function buildPagination(totalPages) {
+                pagNav.innerHTML = '';
+                if (totalPages <= 1) return;
+
+                var pages = getPageNumbers(currentPage, totalPages);
+
+                pagNav.appendChild(makeBtn(null, currentPage === 1, false, 'prev',
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>'
+                ));
+                pages.forEach(function(p) {
+                    pagNav.appendChild(p === '…' ?
+                        makeBtn('…', false, false, 'ellipsis') :
+                        makeBtn(p, false, p === currentPage, 'number'));
+                });
+                pagNav.appendChild(makeBtn(null, currentPage === totalPages, false, 'next',
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
+                ));
+            }
+
+            function getPageNumbers(cur, total) {
+                if (total <= 5) {
+                    var a = [];
+                    for (var i = 1; i <= total; i++) a.push(i);
+                    return a;
+                }
+                if (cur <= 3) return [1, 2, 3, '…', total];
+                if (cur >= total - 2) return [1, '…', total - 2, total - 1, total];
+                return [1, '…', cur - 1, cur, cur + 1, '…', total];
+            }
+
+            function makeBtn(label, disabled, active, type, html) {
+                var btn = document.createElement('button');
+                btn.className = 'vc-page-btn' + (active ? ' active' : '') + (type === 'ellipsis' ? ' ellipsis' : '');
+                btn.innerHTML = html || label;
+                btn.disabled = !!disabled;
+
+                if (type === 'number' && !active) {
+                    btn.setAttribute('aria-label', 'Page ' + label);
+                    btn.addEventListener('click', function() {
+                        currentPage = label;
+                        render();
+                        scrollToGrid();
+                    });
+                }
+                if (type === 'prev') {
+                    btn.setAttribute('aria-label', 'Previous page');
+                    btn.addEventListener('click', function() {
+                        if (currentPage > 1) {
+                            currentPage--;
+                            render();
+                            scrollToGrid();
+                        }
+                    });
+                }
+                if (type === 'next') {
+                    btn.setAttribute('aria-label', 'Next page');
+                    btn.addEventListener('click', function() {
+                        var tp = Math.ceil(visibleCards.length / perPage());
+                        if (currentPage < tp) {
+                            currentPage++;
+                            render();
+                            scrollToGrid();
+                        }
+                    });
+                }
+                return btn;
+            }
+
+            function scrollToGrid() {
+                var top = grid.getBoundingClientRect().top + window.pageYOffset - 80;
+                window.scrollTo(0, top);
+            }
+
+            buildDynamicFilterOptions();
+
+            [search, selType, selFuel, selSeats, selAdv].forEach(function(el) {
+                el.addEventListener('input', applyFilters);
+                el.addEventListener('change', applyFilters);
+            });
+
+            var resizeTimer;
+            var lastWidth = window.innerWidth;
+            var lastPerPage = perPage();
+
+            window.addEventListener('resize', function() {
+                // Ignore height-only changes (mobile address bar show/hide)
+                if (window.innerWidth === lastWidth) return;
+                lastWidth = window.innerWidth;
+
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    var newPerPage = perPage();
+                    if (newPerPage === lastPerPage) return;
+
+                    // Keep the user on the page containing the same first item
+                    var firstItemIndex = (currentPage - 1) * lastPerPage;
+                    lastPerPage = newPerPage;
+                    currentPage = Math.floor(firstItemIndex / newPerPage) + 1;
+
+                    render();
+                }, 200);
+            });
+
+            restoreState();
+        })();
+    </script>
+<?php endif; ?>
